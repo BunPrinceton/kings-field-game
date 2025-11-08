@@ -5,11 +5,11 @@ export class AtmosphericLighting {
     constructor(scene, config = {}) {
         this.scene = scene;
 
-        // Configuration for Kings Field-style atmosphere
+        // Configuration for Kings Field-style atmosphere (brightened)
         this.config = {
-            ambientColor: config.ambientColor || 0x0a0a0a,
-            ambientIntensity: config.ambientIntensity || 0.15,
-            fogColor: config.fogColor || 0x000000,
+            ambientColor: config.ambientColor || 0x404040,
+            ambientIntensity: config.ambientIntensity || 0.6,
+            fogColor: config.fogColor || 0x111111,
             fogNear: config.fogNear || 0.5,
             fogFar: config.fogFar || 15,
             ...config
@@ -24,17 +24,22 @@ export class AtmosphericLighting {
     }
 
     setupLighting() {
-        // Very dark ambient light - Kings Field style
+        // Brightened ambient light so you can actually see!
         this.lights.ambient = new THREE.AmbientLight(
             this.config.ambientColor,
             this.config.ambientIntensity
         );
         this.scene.add(this.lights.ambient);
 
-        // Create player light (follows camera)
-        this.lights.player = new THREE.PointLight(0x8888bb, 0.8, 8);
+        // Stronger player light (follows camera)
+        this.lights.player = new THREE.PointLight(0xffffdd, 2.5, 20);
         this.lights.player.position.set(0, 1.6, 0);
         this.scene.add(this.lights.player);
+
+        // Add a directional "skylight" for overall visibility
+        this.lights.directional = new THREE.DirectionalLight(0xffffff, 1.2);
+        this.lights.directional.position.set(10, 20, 10);
+        this.scene.add(this.lights.directional);
     }
 
     setupFog() {

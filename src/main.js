@@ -258,10 +258,10 @@ function checkCollision(gridX, gridZ) {
 function getMovementVector(direction) {
     const angle = game.player.rotation.y;
     const vectors = {
-        forward: { x: Math.sin(angle), z: Math.cos(angle) },
-        backward: { x: -Math.sin(angle), z: -Math.cos(angle) },
-        left: { x: Math.sin(angle - Math.PI / 2), z: Math.cos(angle - Math.PI / 2) },
-        right: { x: Math.sin(angle + Math.PI / 2), z: Math.cos(angle + Math.PI / 2) }
+        forward: { x: -Math.sin(angle), z: -Math.cos(angle) },
+        backward: { x: Math.sin(angle), z: Math.cos(angle) },
+        left: { x: -Math.sin(angle - Math.PI / 2), z: -Math.cos(angle - Math.PI / 2) },
+        right: { x: -Math.sin(angle + Math.PI / 2), z: -Math.cos(angle + Math.PI / 2) }
     };
 
     const vec = vectors[direction];
@@ -381,11 +381,11 @@ function init() {
     document.body.appendChild(game.renderer.domElement);
     game.renderer.domElement.id = 'game-canvas';
 
-    // Setup atmospheric lighting
+    // Setup atmospheric lighting (brighter so you can see!)
     game.lighting = new AtmosphericLighting(game.scene, {
-        ambientIntensity: 0.12,
-        fogNear: 0.5,
-        fogFar: 18
+        ambientIntensity: 0.5,
+        fogNear: 5,
+        fogFar: 30
     });
     game.lighting.setupFog();
     game.lighting.enableShadows(game.renderer);

@@ -418,11 +418,11 @@ export class DecorationsManager {
     }
 
     /**
-     * Material getters with caching (using simple materials to avoid texture limits)
+     * Material getters with caching
      */
     async getColumnMaterial() {
         if (!this.columnMaterial) {
-            this.columnMaterial = new THREE.MeshStandardMaterial({
+            this.columnMaterial = await this.textureManager.createPBRMaterial({}, {
                 color: 0x5a5a5a,
                 roughness: 0.8,
                 metalness: 0.05
@@ -433,7 +433,7 @@ export class DecorationsManager {
 
     async getStoneMaterial() {
         if (!this.stoneMaterial) {
-            this.stoneMaterial = new THREE.MeshStandardMaterial({
+            this.stoneMaterial = await this.textureManager.createPBRMaterial({}, {
                 color: 0x4a4a4a,
                 roughness: 0.9,
                 metalness: 0.0
@@ -444,11 +444,7 @@ export class DecorationsManager {
 
     async getWoodMaterial() {
         if (!this.woodMaterial) {
-            this.woodMaterial = new THREE.MeshStandardMaterial({
-                color: 0x4a3020,
-                roughness: 0.8,
-                metalness: 0.0
-            });
+            this.woodMaterial = await this.textureManager.createWoodMaterial(true);
         }
         return this.woodMaterial;
     }

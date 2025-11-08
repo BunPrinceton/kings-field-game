@@ -232,8 +232,8 @@ async function initAudio() {
 async function loadSounds() {
     const loadPromises = [];
 
-    // Note: Audio files are optional - the game will run without them
-    // Missing files will fail silently to avoid console spam
+    // Note: Many of these files may not exist yet
+    // The AudioManager will log warnings for missing files
 
     // Load footstep variations
     const footstepConfig = SOUND_CONFIG.footsteps.stone;
@@ -241,6 +241,7 @@ async function loadSounds() {
         footstepConfig.files.forEach((file, index) => {
             loadPromises.push(
                 game.audio.loadSound('footsteps', `stone_${index}`, file, false, false)
+                    .catch(err => console.warn(`Could not load ${file}`))
             );
         });
     }
@@ -252,6 +253,7 @@ async function loadSounds() {
             const name = config.files.length > 1 ? `${soundName}_${index}` : soundName;
             loadPromises.push(
                 game.audio.loadSound('combat', name, file, false, config.positional)
+                    .catch(err => console.warn(`Could not load ${file}`))
             );
         });
     });
@@ -262,6 +264,7 @@ async function loadSounds() {
         config.files.forEach((file, index) => {
             loadPromises.push(
                 game.audio.loadSound('ambience', soundName, file, config.loop, false)
+                    .catch(err => console.warn(`Could not load ${file}`))
             );
         });
     });
@@ -272,14 +275,14 @@ async function loadSounds() {
         config.files.forEach((file) => {
             loadPromises.push(
                 game.audio.loadSound('ui', soundName, file, false, false)
+                    .catch(err => console.warn(`Could not load ${file}`))
             );
         });
     });
 
-    // Wait for all sounds to attempt loading (silently fails for missing files)
+    // Wait for all sounds to attempt loading
     await Promise.allSettled(loadPromises);
-    const loadedSounds = loadPromises.length;
-    console.log(`Audio system ready (${loadedSounds} sound files attempted)`);
+    console.log('Sound loading complete (some files may be missing)');
 }
 
 // Start ambient background sounds
@@ -564,11 +567,13 @@ async function init() {
     game.dungeon.builder = new DungeonBuilder(game.scene, game.dungeon.data, {
         cellSize: 4,
         wallHeight: 3.5,
-        useTextures: false  // Using simple materials to avoid WebGL texture limit
+        useTextures: false  // Disabled to prevent WebGL texture limit errors
     });
     await game.dungeon.builder.build();
 
-    // Place decorations with simple materials (no textures)
+    // Place decorations - DISABLED to prevent WebGL texture limit errors
+    // TODO: Re-enable with texture-less materials or reduce decoration count
+    /*
     game.dungeon.decorations = new DecorationsManager(
         game.scene,
         game.dungeon.data,
@@ -576,23 +581,27 @@ async function init() {
         {
             cellSize: 4,
             wallHeight: 3.5,
-            decorationDensity: 0.2  // Reduced density for better performance
+            decorationDensity: 0.3
         }
     );
     await game.dungeon.decorations.placeDecorations();
+    */
 
-    // Add atmospheric details with simple materials (no textures)
+    // Add atmospheric details - DISABLED to prevent WebGL texture limit errors
+    // TODO: Re-enable with simpler materials
+    /*
     game.dungeon.atmosphericDetails = new AtmosphericDetails(
         game.scene,
         game.dungeon.data,
         {
             cellSize: 4,
             wallHeight: 3.5,
-            detailDensity: 0.15  // Reduced density for better performance
+            detailDensity: 0.2
         }
     );
     game.dungeon.atmosphericDetails.addDetails();
     game.dungeon.atmosphericDetails.addDustParticles();
+    */
 
     // Initialize player (now as Player class instance)
     game.player = new Player(game.scene);

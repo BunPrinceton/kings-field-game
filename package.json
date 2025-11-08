@@ -1,0 +1,21 @@
+{
+  "name": "kings-field-game",
+  "version": "0.1.0",
+  "description": "A King's Field-inspired first-person dungeon crawler",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "keywords": ["game", "dungeon-crawler", "3d", "rpg"],
+  "author": "",
+  "license": "MIT",
+  "devDependencies": {
+    "vite": "^5.0.0"
+  },
+  "dependencies": {
+    "three": "^0.160.0"
+  }
+}

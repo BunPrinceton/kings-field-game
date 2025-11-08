@@ -390,14 +390,29 @@ function init() {
     game.lighting.setupFog();
     game.lighting.enableShadows(game.renderer);
 
-    // Generate dungeon
-    game.dungeon.generator = new DungeonGenerator(25, 25, {
+    // Generate dungeon with POI system
+    game.dungeon.generator = new DungeonGenerator(40, 40, {
         minRoomSize: 3,
-        maxRoomSize: 8,
-        maxRooms: 12
+        maxRoomSize: 7,
+        maxRooms: 25,
+        centerSymmetryRadius: 8,
+        hubCount: 3,
+        treasureRoomCount: 4,
+        safeRoomCount: 2,
+        puzzleRoomCount: 2,
+        landmarkCount: 3,
+        sideAreaChance: 0.3
     });
 
     game.dungeon.data = game.dungeon.generator.generate();
+
+    // Log dungeon info for debugging
+    console.log('Dungeon generated with POI system:');
+    console.log('- Total rooms:', game.dungeon.data.rooms.length);
+    console.log('- POIs:', game.dungeon.data.pois.size);
+    console.log('- Critical path rooms:', game.dungeon.data.criticalPath.length);
+    console.log('- Entrance:', game.dungeon.data.entrance?.id);
+    console.log('- Exit:', game.dungeon.data.exit?.id);
 
     // Build dungeon geometry
     game.dungeon.builder = new DungeonBuilder(game.scene, game.dungeon.data, {

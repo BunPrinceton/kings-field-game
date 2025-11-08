@@ -29,6 +29,9 @@ export class DungeonBuilder {
             ceiling: null
         };
 
+        // Material cache for color-based materials (to avoid creating thousands of materials)
+        this.colorMaterialCache = new Map();
+
         // POI-specific color themes
         this.poiColors = {
             [POIType.ENTRANCE]: { floor: 0x3a5a3a, wall: 0x4a6a4a, ceiling: 0x2a4a2a },
@@ -92,6 +95,29 @@ export class DungeonBuilder {
         return this.poiColors[room.type][type] || this.poiColors[POIType.STANDARD][type];
     }
 
+    /**
+     * Get or create a cached material for a specific color and properties
+     * This prevents creating thousands of duplicate materials
+     */
+    getCachedMaterial(color, properties = {}) {
+        // Create a cache key from color and properties
+        const key = `${color}_${properties.roughness || 0.9}_${properties.metalness || 0.1}_${properties.side || 'front'}`;
+
+        if (this.colorMaterialCache.has(key)) {
+            return this.colorMaterialCache.get(key);
+        }
+
+        const material = new THREE.MeshStandardMaterial({
+            color: color,
+            roughness: properties.roughness || 0.9,
+            metalness: properties.metalness || 0.1,
+            side: properties.side || THREE.FrontSide
+        });
+
+        this.colorMaterialCache.set(key, material);
+        return material;
+    }
+
     createFloors() {
         for (let y = 0; y < this.dungeonData.height; y++) {
             for (let x = 0; x < this.dungeonData.width; x++) {
@@ -99,8 +125,8 @@ export class DungeonBuilder {
                     const room = this.getRoomAtPosition(x, y);
                     const floorColor = this.getColorForRoom(room, 'floor');
 
-                    const floorMaterial = new THREE.MeshStandardMaterial({
-                        color: floorColor,
+                    // Use cached material instead of creating a new one each time
+                    const floorMaterial = this.getCachedMaterial(floorColor, {
                         roughness: 0.9,
                         metalness: 0.1
                     });
@@ -116,7 +142,8 @@ export class DungeonBuilder {
                         0,
                         y * this.config.cellSize
                     );
-                    floor.receiveShadow = true;
+                    // Shadows disabled to prevent WebGL texture limit errors
+                    // floor.receiveShadow = true;
 
                     this.scene.add(floor);
                     this.meshes.push(floor);
@@ -132,8 +159,8 @@ export class DungeonBuilder {
                     const room = this.getRoomAtPosition(x, y);
                     const ceilingColor = this.getColorForRoom(room, 'ceiling');
 
-                    const ceilingMaterial = new THREE.MeshStandardMaterial({
-                        color: ceilingColor,
+                    // Use cached material instead of creating a new one each time
+                    const ceilingMaterial = this.getCachedMaterial(ceilingColor, {
                         roughness: 0.8,
                         metalness: 0.1,
                         side: THREE.DoubleSide
@@ -165,8 +192,8 @@ export class DungeonBuilder {
                     const room = this.getRoomAtPosition(x, y);
                     const wallColor = this.getColorForRoom(room, 'wall');
 
-                    const wallMaterial = new THREE.MeshStandardMaterial({
-                        color: wallColor,
+                    // Use cached material instead of creating a new one each time
+                    const wallMaterial = this.getCachedMaterial(wallColor, {
                         roughness: 0.85,
                         metalness: 0.15
                     });
@@ -195,8 +222,9 @@ export class DungeonBuilder {
             );
 
             const wall = new THREE.Mesh(wallGeometry, material);
-            wall.castShadow = true;
-            wall.receiveShadow = true;
+            // Shadows disabled to prevent WebGL texture limit errors
+            // wall.castShadow = true;
+            // wall.receiveShadow = true;
 
             // Position wall
             let wallX = x * this.config.cellSize;
@@ -275,11 +303,10 @@ export class DungeonBuilder {
         this.scene.add(torchGroup);
         this.meshes.push(torchGroup);
 
-        // Add point light
+        // Add point light (shadows disabled to prevent exceeding texture unit limit)
         const light = new THREE.PointLight(0xff6600, 2, 12);
         light.position.copy(torch.position);
-        light.castShadow = true;
-        light.shadow.bias = -0.001;
+        light.castShadow = false; // Disabled: too many shadow-casting lights exceed WebGL texture limits
         this.scene.add(light);
 
         torch.light = light;

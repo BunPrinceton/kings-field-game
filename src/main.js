@@ -537,7 +537,8 @@ async function init() {
         fogFar: 30
     });
     game.lighting.setupFog();
-    game.lighting.enableShadows(game.renderer);
+    // Shadows disabled to prevent WebGL texture unit limit errors
+    // game.lighting.enableShadows(game.renderer);
 
     // Generate dungeon with POI system
     game.dungeon.generator = new DungeonGenerator(60, 60, {

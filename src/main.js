@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { DungeonGenerator } from './DungeonGenerator.js';
+import { DungeonBuilder } from './DungeonBuilder.js';
+import { AtmosphericLighting } from './AtmosphericLighting.js';
 
 // Game state
 const game = {
@@ -8,15 +11,20 @@ const game = {
     player: {
         position: { x: 0, y: 1.6, z: 5 },
         rotation: { x: 0, y: 0 }
-    }
+    },
+    dungeon: {
+        generator: null,
+        builder: null,
+        data: null
+    },
+    lighting: null,
+    time: 0
 };
 
 // Initialize the game
 function init() {
     // Scene setup
     game.scene = new THREE.Scene();
-    game.scene.background = new THREE.Color(0x111111);
-    game.scene.fog = new THREE.Fog(0x111111, 1, 20);
 
     // Camera setup (first-person view)
     game.camera = new THREE.PerspectiveCamera(
@@ -25,11 +33,6 @@ function init() {
         0.1,
         1000
     );
-    game.camera.position.set(
-        game.player.position.x,
-        game.player.position.y,
-        game.player.position.z
-    );
 
     // Renderer setup
     game.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -37,37 +40,47 @@ function init() {
     document.body.appendChild(game.renderer.domElement);
     game.renderer.domElement.id = 'game-canvas';
 
-    // Basic lighting
-    const ambientLight = new THREE.AmbientLight(0x404040, 0.5);
-    game.scene.add(ambientLight);
-
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 0.5);
-    directionalLight.position.set(5, 10, 5);
-    game.scene.add(directionalLight);
-
-    // Create a simple floor
-    const floorGeometry = new THREE.PlaneGeometry(50, 50);
-    const floorMaterial = new THREE.MeshStandardMaterial({
-        color: 0x333333,
-        roughness: 0.8
+    // Setup atmospheric lighting
+    game.lighting = new AtmosphericLighting(game.scene, {
+        ambientIntensity: 0.12,
+        fogNear: 0.5,
+        fogFar: 18
     });
-    const floor = new THREE.Mesh(floorGeometry, floorMaterial);
-    floor.rotation.x = -Math.PI / 2;
-    floor.position.y = 0;
-    game.scene.add(floor);
+    game.lighting.setupFog();
+    game.lighting.enableShadows(game.renderer);
 
-    // Add a test cube
-    const geometry = new THREE.BoxGeometry(1, 1, 1);
-    const material = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
-    const cube = new THREE.Mesh(geometry, material);
-    cube.position.set(0, 0.5, 0);
-    game.scene.add(cube);
+    // Generate dungeon
+    game.dungeon.generator = new DungeonGenerator(25, 25, {
+        minRoomSize: 3,
+        maxRoomSize: 8,
+        maxRooms: 12
+    });
+
+    game.dungeon.data = game.dungeon.generator.generate();
+
+    // Build dungeon geometry
+    game.dungeon.builder = new DungeonBuilder(game.scene, game.dungeon.data, {
+        cellSize: 4,
+        wallHeight: 3.5
+    });
+    game.dungeon.builder.build();
+
+    // Set player spawn position
+    const spawnPos = game.dungeon.generator.getSpawnPosition();
+    game.player.position.x = spawnPos.x * 4;
+    game.player.position.z = spawnPos.z * 4;
+
+    game.camera.position.set(
+        game.player.position.x,
+        game.player.position.y,
+        game.player.position.z
+    );
 
     // Handle window resize
     window.addEventListener('resize', onWindowResize);
 
     // Update UI
-    document.querySelector('#ui div').textContent = 'Kings Field Game - Ready';
+    document.querySelector('#ui div').textContent = 'Kings Field - Dungeon Generated';
 
     // Start game loop
     animate();
@@ -81,6 +94,21 @@ function onWindowResize() {
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // Update game time
+    game.time += 0.016;
+
+    // Update atmospheric effects
+    if (game.lighting) {
+        game.lighting.update(game.time);
+        game.lighting.updatePlayerLight(game.camera.position);
+    }
+
+    // Animate torches
+    if (game.dungeon.builder) {
+        game.dungeon.builder.animateTorches(game.time);
+    }
+
     game.renderer.render(game.scene, game.camera);
 }
 

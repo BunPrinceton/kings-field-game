@@ -1,6 +1,7 @@
 // DungeonBuilder.js - Creates 3D geometry from dungeon data
 import * as THREE from 'three';
 import { POIType } from './DungeonGenerator.js';
+import { TextureManager } from './TextureManager.js';
 
 export class DungeonBuilder {
     constructor(scene, dungeonData, config = {}) {
@@ -12,11 +13,21 @@ export class DungeonBuilder {
             cellSize: config.cellSize || 4,
             wallHeight: config.wallHeight || 3,
             wallThickness: config.wallThickness || 0.2,
+            useTextures: config.useTextures !== undefined ? config.useTextures : true,
             ...config
         };
 
         this.meshes = [];
         this.torches = [];
+
+        // Texture management
+        this.textureManager = config.textureManager || new TextureManager();
+        this.materialsReady = false;
+        this.materials = {
+            wall: null,
+            floor: null,
+            ceiling: null
+        };
 
         // POI-specific color themes
         this.poiColors = {
@@ -32,7 +43,12 @@ export class DungeonBuilder {
         };
     }
 
-    build() {
+    async build() {
+        // Load materials if using textures
+        if (this.config.useTextures) {
+            await this.loadMaterials();
+        }
+
         this.createFloors();
         this.createCeilings();
         this.createWalls();
@@ -43,6 +59,20 @@ export class DungeonBuilder {
             meshes: this.meshes,
             torches: this.torches
         };
+    }
+
+    async loadMaterials() {
+        console.log('Loading dungeon materials...');
+        try {
+            this.materials.wall = await this.textureManager.createWallMaterial();
+            this.materials.floor = await this.textureManager.createFloorMaterial();
+            this.materials.ceiling = await this.textureManager.createCeilingMaterial();
+            this.materialsReady = true;
+            console.log('✓ Materials loaded successfully');
+        } catch (error) {
+            console.warn('Failed to load textures, using fallback colors:', error);
+            this.materialsReady = false;
+        }
     }
 
     getRoomAtPosition(x, y) {

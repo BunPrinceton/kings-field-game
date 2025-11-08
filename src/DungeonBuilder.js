@@ -1,5 +1,6 @@
 // DungeonBuilder.js - Creates 3D geometry from dungeon data
 import * as THREE from 'three';
+import { TextureManager } from './TextureManager.js';
 
 export class DungeonBuilder {
     constructor(scene, dungeonData, config = {}) {
@@ -11,14 +12,29 @@ export class DungeonBuilder {
             cellSize: config.cellSize || 4,
             wallHeight: config.wallHeight || 3,
             wallThickness: config.wallThickness || 0.2,
+            useTextures: config.useTextures !== undefined ? config.useTextures : true,
             ...config
         };
 
         this.meshes = [];
         this.torches = [];
+
+        // Texture management
+        this.textureManager = config.textureManager || new TextureManager();
+        this.materialsReady = false;
+        this.materials = {
+            wall: null,
+            floor: null,
+            ceiling: null
+        };
     }
 
-    build() {
+    async build() {
+        // Load materials if using textures
+        if (this.config.useTextures) {
+            await this.loadMaterials();
+        }
+
         this.createFloors();
         this.createCeilings();
         this.createWalls();
@@ -30,12 +46,29 @@ export class DungeonBuilder {
         };
     }
 
+    async loadMaterials() {
+        console.log('Loading dungeon materials...');
+        try {
+            this.materials.wall = await this.textureManager.createWallMaterial();
+            this.materials.floor = await this.textureManager.createFloorMaterial();
+            this.materials.ceiling = await this.textureManager.createCeilingMaterial();
+            this.materialsReady = true;
+            console.log('Materials loaded successfully');
+        } catch (error) {
+            console.error('Failed to load materials:', error);
+            this.materialsReady = false;
+        }
+    }
+
     createFloors() {
-        const floorMaterial = new THREE.MeshStandardMaterial({
-            color: 0x2a2a2a,
-            roughness: 0.9,
-            metalness: 0.1
-        });
+        // Use textured material if available, otherwise fallback to solid color
+        const floorMaterial = this.materialsReady && this.materials.floor
+            ? this.materials.floor
+            : new THREE.MeshStandardMaterial({
+                color: 0x2a2a2a,
+                roughness: 0.9,
+                metalness: 0.1
+            });
 
         for (let y = 0; y < this.dungeonData.height; y++) {
             for (let x = 0; x < this.dungeonData.width; x++) {
@@ -61,12 +94,15 @@ export class DungeonBuilder {
     }
 
     createCeilings() {
-        const ceilingMaterial = new THREE.MeshStandardMaterial({
-            color: 0x1a1a1a,
-            roughness: 0.8,
-            metalness: 0.1,
-            side: THREE.DoubleSide
-        });
+        // Use textured material if available, otherwise fallback to solid color
+        const ceilingMaterial = this.materialsReady && this.materials.ceiling
+            ? this.materials.ceiling
+            : new THREE.MeshStandardMaterial({
+                color: 0x1a1a1a,
+                roughness: 0.8,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
 
         for (let y = 0; y < this.dungeonData.height; y++) {
             for (let x = 0; x < this.dungeonData.width; x++) {
@@ -91,11 +127,14 @@ export class DungeonBuilder {
     }
 
     createWalls() {
-        const wallMaterial = new THREE.MeshStandardMaterial({
-            color: 0x3a3a3a,
-            roughness: 0.85,
-            metalness: 0.15
-        });
+        // Use textured material if available, otherwise fallback to solid color
+        const wallMaterial = this.materialsReady && this.materials.wall
+            ? this.materials.wall
+            : new THREE.MeshStandardMaterial({
+                color: 0x3a3a3a,
+                roughness: 0.85,
+                metalness: 0.15
+            });
 
         for (let y = 0; y < this.dungeonData.height; y++) {
             for (let x = 0; x < this.dungeonData.width; x++) {

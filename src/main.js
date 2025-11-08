@@ -2,6 +2,10 @@ import * as THREE from 'three';
 import { DungeonGenerator } from './DungeonGenerator.js';
 import { DungeonBuilder } from './DungeonBuilder.js';
 import { AtmosphericLighting } from './AtmosphericLighting.js';
+import { WeaponSystem } from './WeaponSystem.js';
+import { HitEffects } from './HitEffects.js';
+import { DecorationsManager } from './DecorationsManager.js';
+import { AtmosphericDetails } from './AtmosphericDetails.js';
 
 // Health system class
 class Health {
@@ -42,18 +46,22 @@ class Player {
         this.attackCooldownMax = 500; // milliseconds
     }
 
-    attack(enemies) {
+    attack(enemies, weaponStats) {
         if (this.isAttacking || this.attackCooldown > 0) {
             return null;
         }
 
+        // Use weapon stats if provided, otherwise use defaults
+        const attackRange = weaponStats ? weaponStats.range : this.attackRange;
+        const attackSpeed = weaponStats ? weaponStats.attackSpeed : this.attackCooldownMax;
+
         this.isAttacking = true;
-        this.attackCooldown = this.attackCooldownMax;
+        this.attackCooldown = attackSpeed;
 
         // Find enemies in attack range
         const playerPos = new THREE.Vector3(this.position.x, this.position.y, this.position.z);
         let closestEnemy = null;
-        let closestDistance = this.attackRange;
+        let closestDistance = attackRange;
 
         for (const enemy of enemies) {
             if (enemy.isDead()) continue;
@@ -161,6 +169,8 @@ const game = {
     camera: null,
     renderer: null,
     player: null, // Will be Player class instance
+    weaponSystem: null, // Weapon system instance
+    hitEffects: null, // Hit effects system
     gridSize: 1, // Size of each grid cell
     movement: {
         isMoving: false,
@@ -196,6 +206,21 @@ function setupInput() {
         if (e.code === 'Space') {
             e.preventDefault();
             game.input.attack = true;
+        }
+
+        // Handle weapon switching (1-4 keys)
+        if (game.weaponSystem) {
+            const weaponMap = {
+                '1': 'sword',
+                '2': 'axe',
+                '3': 'mace',
+                '4': 'dagger'
+            };
+
+            if (weaponMap[e.key]) {
+                game.weaponSystem.switchWeapon(weaponMap[e.key]);
+                updateUI();
+            }
         }
 
         // Handle movement
@@ -357,7 +382,7 @@ function updateMovement(deltaTime) {
 }
 
 // Initialize the game
-function init() {
+async function init() {
     // Create clock for delta time
     game.clock = new THREE.Clock();
 
@@ -374,6 +399,12 @@ function init() {
         0.1,
         1000
     );
+
+    // Initialize weapon system
+    game.weaponSystem = new WeaponSystem(game.camera, game.scene);
+
+    // Initialize hit effects
+    game.hitEffects = new HitEffects(game.scene);
 
     // Renderer setup
     game.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -404,7 +435,33 @@ function init() {
         cellSize: 4,
         wallHeight: 3.5
     });
-    game.dungeon.builder.build();
+    await game.dungeon.builder.build();
+
+    // Place decorations
+    game.dungeon.decorations = new DecorationsManager(
+        game.scene,
+        game.dungeon.data,
+        game.dungeon.builder.textureManager,
+        {
+            cellSize: 4,
+            wallHeight: 3.5,
+            decorationDensity: 0.3
+        }
+    );
+    await game.dungeon.decorations.placeDecorations();
+
+    // Add atmospheric details
+    game.dungeon.atmosphericDetails = new AtmosphericDetails(
+        game.scene,
+        game.dungeon.data,
+        {
+            cellSize: 4,
+            wallHeight: 3.5,
+            detailDensity: 0.2
+        }
+    );
+    game.dungeon.atmosphericDetails.addDetails();
+    game.dungeon.atmosphericDetails.addDustParticles();
 
     // Initialize player (now as Player class instance)
     game.player = new Player(game.scene);
@@ -458,6 +515,18 @@ function updateUI() {
     const healthPercent = game.player.health.getPercentage();
     const healthColor = healthPercent > 50 ? '#0f0' : healthPercent > 25 ? '#ff0' : '#f00';
 
+    // Get weapon stats if weapon system is initialized
+    let weaponInfo = '';
+    if (game.weaponSystem) {
+        const stats = game.weaponSystem.getWeaponStats();
+        weaponInfo = `
+            <div style="font-size: 12px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #666;">
+                <div style="color: #ffa500; margin-bottom: 3px;">${stats.name}</div>
+                <div style="font-size: 11px;">Damage: ${stats.damage} | Range: ${stats.range.toFixed(1)} | Speed: ${(1000/stats.attackSpeed).toFixed(1)}/s</div>
+            </div>
+        `;
+    }
+
     const uiHTML = `
         <div style="font-size: 16px;">
             <div style="margin-bottom: 10px;">Kings Field - Ready</div>
@@ -467,11 +536,12 @@ function updateUI() {
             <div style="background: #333; width: 200px; height: 20px; border: 2px solid #fff; margin-bottom: 10px;">
                 <div style="background: ${healthColor}; width: ${healthPercent}%; height: 100%; transition: width 0.3s;"></div>
             </div>
-            <div style="font-size: 12px; opacity: 0.7;">
+            ${weaponInfo}
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 10px;">
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | Q/E: Rotate | SPACE: Attack
+                WASD: Move | Q/E: Rotate | SPACE: Attack | 1-4: Weapons
             </div>
         </div>
     `;
@@ -497,17 +567,48 @@ function update(deltaTime) {
     }
 
     // Handle attack input
-    if (game.input.attack) {
-        const targetEnemy = game.player.attack(game.enemies);
+    if (game.input.attack && game.weaponSystem && !game.weaponSystem.isAttacking) {
+        const weaponStats = game.weaponSystem.getWeaponStats();
+        const targetEnemy = game.player.attack(game.enemies, weaponStats);
+
         if (targetEnemy) {
-            const dead = targetEnemy.takeDamage(game.player.attackPower);
+            // Store target for damage dealing during attack animation
+            game.attackTarget = targetEnemy;
+            game.weaponSystem.startAttack();
+        } else {
+            // Still play attack animation even if no target
+            game.weaponSystem.startAttack();
+        }
+
+        game.input.attack = false;
+    }
+
+    // Deal damage during weapon swing (at the right timing)
+    if (game.weaponSystem && game.weaponSystem.isAttacking && game.attackTarget) {
+        if (game.weaponSystem.getAttackHitTiming()) {
+            const weaponStats = game.weaponSystem.getWeaponStats();
+            const dead = game.attackTarget.takeDamage(weaponStats.damage);
+
+            // Create hit effects
+            if (game.hitEffects) {
+                game.hitEffects.createHitParticles(game.attackTarget.mesh.position, 0xff6666);
+                game.hitEffects.triggerScreenShake(0.08, 0.12);
+            }
+
             updateUI();
 
             if (dead) {
                 console.log('Enemy defeated!');
             }
+
+            // Clear target so we don't hit multiple times
+            game.attackTarget = null;
         }
-        game.input.attack = false;
+    }
+
+    // Clear attack target when animation completes
+    if (game.weaponSystem && game.weaponSystem.isAttackComplete()) {
+        game.attackTarget = null;
     }
 }
 
@@ -520,6 +621,22 @@ function animate() {
 
     // Update movement system
     updateMovement(deltaTimeSec);
+
+    // Update weapon system
+    if (game.weaponSystem) {
+        game.weaponSystem.update(deltaTimeSec, game.movement.isMoving);
+    }
+
+    // Update hit effects
+    if (game.hitEffects) {
+        game.hitEffects.update(deltaTimeSec, game.camera);
+
+        // Apply screen shake to camera (add to current position set by updateMovement)
+        const shakeOffset = game.hitEffects.getShakeOffset();
+        game.camera.position.x += shakeOffset.x;
+        game.camera.position.y = game.player.position.y + shakeOffset.y;
+        game.camera.position.z += shakeOffset.z;
+    }
 
     // Update combat system
     update(deltaTimeMs);
@@ -536,6 +653,11 @@ function animate() {
     // Animate torches
     if (game.dungeon.builder) {
         game.dungeon.builder.animateTorches(game.time);
+    }
+
+    // Animate atmospheric details
+    if (game.dungeon.atmosphericDetails) {
+        game.dungeon.atmosphericDetails.animateDust(game.time);
     }
 
     // Render

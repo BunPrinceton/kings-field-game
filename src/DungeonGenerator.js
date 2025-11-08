@@ -160,7 +160,9 @@ export class DungeonGenerator {
             'entrance',
             'Dungeon Entrance'
         );
-        this.criticalPath.push(this.entrance);
+        if (this.entrance) {
+            this.criticalPath.push(this.entrance);
+        }
 
         // Create hub rooms along the path
         for (let i = 0; i < this.config.hubCount; i++) {
@@ -195,7 +197,9 @@ export class DungeonGenerator {
             'exit',
             'Dungeon Exit'
         );
-        this.criticalPath.push(this.exit);
+        if (this.exit) {
+            this.criticalPath.push(this.exit);
+        }
 
         // Add center hub to critical path
         const centerHub = this.rooms.find(r => r.id === 'center_hub');
@@ -369,6 +373,12 @@ export class DungeonGenerator {
     }
 
     connectTwoRooms(roomA, roomB) {
+        // Safety check: ensure both rooms are valid
+        if (!roomA || !roomB) {
+            console.warn('Attempted to connect invalid rooms:', roomA, roomB);
+            return;
+        }
+
         if (Math.random() < 0.5) {
             this.createHorizontalCorridor(roomA.centerX, roomB.centerX, roomA.centerY);
             this.createVerticalCorridor(roomA.centerY, roomB.centerY, roomB.centerX);
@@ -379,10 +389,19 @@ export class DungeonGenerator {
     }
 
     findNearestRoom(room, candidateRooms) {
+        // Safety check: ensure room is valid
+        if (!room) {
+            console.warn('findNearestRoom called with null room');
+            return null;
+        }
+
         let nearest = null;
         let minDistance = Infinity;
 
-        for (const candidate of candidateRooms) {
+        // Filter out null/undefined candidates
+        const validCandidates = candidateRooms.filter(c => c !== null && c !== undefined);
+
+        for (const candidate of validCandidates) {
             const distance = Math.sqrt(
                 Math.pow(room.centerX - candidate.centerX, 2) +
                 Math.pow(room.centerY - candidate.centerY, 2)

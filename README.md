@@ -18,13 +18,24 @@ npm install
 npm run dev
 ```
 
-## Parallel Development with Git Worktrees
+## Parallel Development with Multiple Claude Instances
 
-This project uses git worktrees for parallel development:
+This project is set up for parallel development using git worktrees and multiple Claude Code instances!
 
+### Launch 3 Claude Instances Side-by-Side
+
+**Quick Start (Auto-launch):**
 ```bash
-# Create worktrees
-git worktree add .trees/feature-1 -b feature-1
-git worktree add .trees/feature-2 -b feature-2
-git worktree add .trees/feature-3 -b feature-3
+./launch-parallel-claude-auto.sh
 ```
+
+This opens iTerm2 with 3 vertical panes, each running Claude Code in a different feature branch:
+- **Pane 1**: Movement & Controls (`feature-movement`)
+- **Pane 2**: Environment & Dungeons (`feature-environment`)
+- **Pane 3**: Combat System (`feature-combat`)
+
+### How It Works
+
+Each Claude instance works independently on its own feature branch using git worktrees. This allows simultaneous development on multiple features without conflicts.
+
+See [PARALLEL_DEVELOPMENT.md](PARALLEL_DEVELOPMENT.md) for detailed instructions.

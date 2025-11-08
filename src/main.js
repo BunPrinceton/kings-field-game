@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { DungeonGenerator } from './DungeonGenerator.js';
 import { DungeonBuilder } from './DungeonBuilder.js';
 import { AtmosphericLighting } from './AtmosphericLighting.js';
+import { UIManager } from './ui/UIManager.js';
 
 // Health system class
 class Health {
@@ -33,6 +34,8 @@ class Player {
     constructor(scene) {
         this.scene = scene;
         this.health = new Health(100);
+        this.stamina = new Health(100); // Reuse Health class for stamina
+        this.staminaRegenRate = 20; // stamina per second
         this.position = { x: 0, y: 1.6, z: 5 };
         this.rotation = { x: 0, y: 0 };
         this.attackPower = 25;
@@ -40,6 +43,7 @@ class Player {
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.attackCooldownMax = 500; // milliseconds
+        this.isSprinting = false;
     }
 
     attack(enemies) {
@@ -77,6 +81,12 @@ class Player {
     update(deltaTime) {
         if (this.attackCooldown > 0) {
             this.attackCooldown = Math.max(0, this.attackCooldown - deltaTime);
+        }
+
+        // Regenerate stamina (deltaTime is in milliseconds, convert to seconds)
+        const deltaSeconds = deltaTime / 1000;
+        if (!this.isSprinting && this.stamina.current < this.stamina.max) {
+            this.stamina.heal(this.staminaRegenRate * deltaSeconds);
         }
     }
 }
@@ -429,8 +439,15 @@ function init() {
     // Setup input controls
     setupInput();
 
-    // Update UI
-    updateUI();
+    // Initialize UI Manager
+    game.ui = new UIManager();
+    game.ui.updateHealth(game.player.health.current, game.player.health.max);
+    game.ui.updateStamina(game.player.stamina.current, game.player.stamina.max);
+
+    // Welcome message
+    setTimeout(() => {
+        game.ui.showMessage('THE DUNGEON', 'You have entered a dark and foreboding place. Stay vigilant.');
+    }, 500);
 
     // Start game loop
     game.lastTime = performance.now();
@@ -453,30 +470,22 @@ function spawnEnemies() {
     }
 }
 
-// Update UI display
+// Update all UI elements
 function updateUI() {
-    const healthPercent = game.player.health.getPercentage();
-    const healthColor = healthPercent > 50 ? '#0f0' : healthPercent > 25 ? '#ff0' : '#f00';
+    // Update health and stamina bars
+    game.ui.updateHealth(game.player.health.current, game.player.health.max);
+    game.ui.updateStamina(game.player.stamina.current, game.player.stamina.max);
 
-    const uiHTML = `
-        <div style="font-size: 16px;">
-            <div style="margin-bottom: 10px;">Kings Field - Ready</div>
-            <div style="margin-bottom: 5px;">
-                Health: <span style="color: ${healthColor}">${game.player.health.current}/${game.player.health.max}</span>
-            </div>
-            <div style="background: #333; width: 200px; height: 20px; border: 2px solid #fff; margin-bottom: 10px;">
-                <div style="background: ${healthColor}; width: ${healthPercent}%; height: 100%; transition: width 0.3s;"></div>
-            </div>
-            <div style="font-size: 12px; opacity: 0.7;">
-                Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
-            </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | Q/E: Rotate | SPACE: Attack
-            </div>
-        </div>
-    `;
-
-    document.querySelector('#ui').innerHTML = uiHTML;
+    // Update minimap
+    game.ui.updateMinimap(
+        {
+            x: game.player.position.x / 4, // Convert back to grid coordinates
+            z: game.player.position.z / 4,
+            rotationY: game.player.rotation.y
+        },
+        game.dungeon.data,
+        game.enemies
+    );
 }
 
 function onWindowResize() {
@@ -501,10 +510,18 @@ function update(deltaTime) {
         const targetEnemy = game.player.attack(game.enemies);
         if (targetEnemy) {
             const dead = targetEnemy.takeDamage(game.player.attackPower);
-            updateUI();
+
+            // Show damage number at center-ish screen position
+            game.ui.showDamageNumber(
+                game.player.attackPower,
+                window.innerWidth / 2 + (Math.random() - 0.5) * 100,
+                window.innerHeight / 2 - 100
+            );
 
             if (dead) {
-                console.log('Enemy defeated!');
+                game.ui.showNotification('Enemy defeated!', 'info');
+            } else {
+                game.ui.showNotification(`Hit for ${game.player.attackPower} damage`, 'damage');
             }
         }
         game.input.attack = false;
@@ -513,6 +530,13 @@ function update(deltaTime) {
 
 function animate() {
     requestAnimationFrame(animate);
+
+    // Check if game is paused
+    if (game.ui && game.ui.isPausedState()) {
+        // Still render but don't update game logic
+        game.renderer.render(game.scene, game.camera);
+        return;
+    }
 
     // Calculate delta time (in seconds for movement, milliseconds for combat)
     const deltaTimeSec = game.clock.getDelta();
@@ -536,6 +560,13 @@ function animate() {
     // Animate torches
     if (game.dungeon.builder) {
         game.dungeon.builder.animateTorches(game.time);
+    }
+
+    // Update UI (throttle to every few frames for performance)
+    if (!game.uiUpdateCounter) game.uiUpdateCounter = 0;
+    game.uiUpdateCounter++;
+    if (game.uiUpdateCounter % 3 === 0) {
+        updateUI();
     }
 
     // Render

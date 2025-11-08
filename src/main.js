@@ -155,6 +155,40 @@ class Enemy {
     }
 }
 
+// Control configuration system
+const controls = {
+    // Keybindings (remappable)
+    keys: {
+        forward: ['w', 'arrowup'],
+        backward: ['s', 'arrowdown'],
+        strafeLeft: ['a', 'arrowleft'],
+        strafeRight: ['d', 'arrowright'],
+        rotateLeft: ['q'],
+        rotateRight: ['e'],
+        attack: ['space'],
+        interact: ['f'],
+        sprint: ['shift'],
+        toggleMouseLook: ['m']
+    },
+
+    // Mouse look settings
+    mouseLook: {
+        enabled: false,
+        sensitivity: 0.002,
+        smoothing: 0.15,
+        invertY: false,
+        locked: false
+    },
+
+    // Movement settings
+    movement: {
+        normalDuration: 0.3,    // Normal movement speed (seconds)
+        sprintDuration: 0.15,   // Sprint movement speed (faster)
+        rotationDuration: 0.25, // Rotation speed
+        cameraSmoothing: 0.2    // Camera rotation smoothing
+    }
+};
+
 // Game state
 const game = {
     scene: null,
@@ -170,10 +204,20 @@ const game = {
         startRot: 0,
         targetRot: 0,
         progress: 0,
-        duration: 0.3 // seconds
+        duration: 0.3, // seconds (will vary based on sprint)
+        isSprinting: false
+    },
+    camera: {
+        rotation: { x: 0, y: 0 }, // Independent camera rotation
+        targetRotation: { x: 0, y: 0 },
+        smoothRotation: { x: 0, y: 0 }
     },
     collidableObjects: [], // Objects that block movement
     keys: {}, // Track key states
+    mouse: {
+        deltaX: 0,
+        deltaY: 0
+    },
     clock: null, // For delta time calculation
     dungeon: {
         generator: null,
@@ -185,62 +229,147 @@ const game = {
     enemies: [],
     lastTime: 0,
     input: {
-        attack: false
+        attack: false,
+        interact: false,
+        sprint: false
     }
 };
+
+// Helper function to check if a key matches an action
+function isKeyForAction(key, action) {
+    const keyLower = key.toLowerCase();
+    return controls.keys[action]?.includes(keyLower) || false;
+}
 
 // Input handling
 function setupInput() {
     window.addEventListener('keydown', (e) => {
+        const key = e.key.toLowerCase();
+
+        // Handle toggle mouse look
+        if (isKeyForAction(key, 'toggleMouseLook')) {
+            e.preventDefault();
+            toggleMouseLook();
+            return;
+        }
+
         // Handle attack
-        if (e.code === 'Space') {
+        if (isKeyForAction(key, 'attack')) {
             e.preventDefault();
             game.input.attack = true;
         }
 
+        // Handle interact
+        if (isKeyForAction(key, 'interact')) {
+            e.preventDefault();
+            game.input.interact = true;
+        }
+
+        // Handle sprint
+        if (isKeyForAction(key, 'sprint')) {
+            e.preventDefault();
+            game.input.sprint = true;
+        }
+
         // Handle movement
-        if (game.keys[e.key.toLowerCase()]) return; // Already pressed
-        game.keys[e.key.toLowerCase()] = true;
-        handleInput(e.key.toLowerCase());
+        if (game.keys[key]) return; // Already pressed
+        game.keys[key] = true;
+        handleInput(key);
     });
 
     window.addEventListener('keyup', (e) => {
+        const key = e.key.toLowerCase();
+
         // Handle attack release
-        if (e.code === 'Space') {
+        if (isKeyForAction(key, 'attack')) {
             e.preventDefault();
             game.input.attack = false;
         }
 
+        // Handle interact release
+        if (isKeyForAction(key, 'interact')) {
+            e.preventDefault();
+            game.input.interact = false;
+        }
+
+        // Handle sprint release
+        if (isKeyForAction(key, 'sprint')) {
+            e.preventDefault();
+            game.input.sprint = false;
+        }
+
         // Handle movement release
-        game.keys[e.key.toLowerCase()] = false;
+        game.keys[key] = false;
+    });
+
+    // Mouse movement for mouse look
+    window.addEventListener('mousemove', (e) => {
+        if (!controls.mouseLook.enabled || !controls.mouseLook.locked) return;
+
+        game.mouse.deltaX = e.movementX;
+        game.mouse.deltaY = e.movementY;
+    });
+
+    // Pointer lock for mouse look
+    document.addEventListener('click', () => {
+        if (controls.mouseLook.enabled && !controls.mouseLook.locked) {
+            game.renderer.domElement.requestPointerLock();
+        }
+    });
+
+    document.addEventListener('pointerlockchange', () => {
+        controls.mouseLook.locked = document.pointerLockElement === game.renderer.domElement;
     });
 }
 
 function handleInput(key) {
+    // Check for actions
+    let action = null;
+
+    if (isKeyForAction(key, 'forward')) action = 'forward';
+    else if (isKeyForAction(key, 'backward')) action = 'backward';
+    else if (isKeyForAction(key, 'strafeLeft')) action = 'left';
+    else if (isKeyForAction(key, 'strafeRight')) action = 'right';
+    else if (isKeyForAction(key, 'rotateLeft')) action = 'rotateLeft';
+    else if (isKeyForAction(key, 'rotateRight')) action = 'rotateRight';
+
+    if (!action) return;
+
+    // In mouse look mode, disable Q/E rotation (use mouse instead)
+    if (controls.mouseLook.enabled && (action === 'rotateLeft' || action === 'rotateRight')) {
+        return;
+    }
+
     // Don't accept input if already moving or rotating
     if (game.movement.isMoving || game.movement.isRotating) return;
-
-    const moveMap = {
-        'w': 'forward',
-        'arrowup': 'forward',
-        's': 'backward',
-        'arrowdown': 'backward',
-        'a': 'left',
-        'arrowleft': 'left',
-        'd': 'right',
-        'arrowright': 'right',
-        'q': 'rotateLeft',
-        'e': 'rotateRight'
-    };
-
-    const action = moveMap[key];
-    if (!action) return;
 
     if (action === 'rotateLeft' || action === 'rotateRight') {
         rotate(action === 'rotateLeft' ? -1 : 1);
     } else {
         move(action);
     }
+}
+
+// Toggle mouse look mode
+function toggleMouseLook() {
+    controls.mouseLook.enabled = !controls.mouseLook.enabled;
+
+    if (controls.mouseLook.enabled) {
+        // Request pointer lock
+        game.renderer.domElement.requestPointerLock();
+        console.log('Mouse look enabled - Click to lock cursor');
+    } else {
+        // Exit pointer lock
+        if (document.pointerLockElement) {
+            document.exitPointerLock();
+        }
+        // Sync camera rotation with player rotation when disabling
+        game.camera.rotation.y = game.player.rotation.y;
+        game.camera.targetRotation.y = game.player.rotation.y;
+        console.log('Mouse look disabled - Using keyboard rotation');
+    }
+
+    updateUI();
 }
 
 // Check if a grid position has a collision
@@ -256,7 +385,10 @@ function checkCollision(gridX, gridZ) {
 
 // Calculate movement direction based on current rotation and move direction
 function getMovementVector(direction) {
-    const angle = game.player.rotation.y;
+    // Use camera rotation for movement direction when mouse look is enabled
+    // This allows strafing while looking in a different direction
+    const angle = controls.mouseLook.enabled ? game.camera.rotation.y : game.player.rotation.y;
+
     const vectors = {
         forward: { x: Math.sin(angle), z: Math.cos(angle) },
         backward: { x: -Math.sin(angle), z: -Math.cos(angle) },
@@ -286,6 +418,13 @@ function move(direction) {
         return;
     }
 
+    // Determine movement duration based on sprint
+    const isSprinting = game.input.sprint;
+    game.movement.duration = isSprinting ?
+        controls.movement.sprintDuration :
+        controls.movement.normalDuration;
+    game.movement.isSprinting = isSprinting;
+
     // Start movement animation
     game.movement.isMoving = true;
     game.movement.progress = 0;
@@ -301,11 +440,51 @@ function rotate(direction) {
     game.movement.progress = 0;
     game.movement.startRot = game.player.rotation.y;
     game.movement.targetRot = game.player.rotation.y + (direction * Math.PI / 2);
+    game.movement.duration = controls.movement.rotationDuration;
+
+    // When not in mouse look mode, sync camera rotation with player
+    if (!controls.mouseLook.enabled) {
+        game.camera.targetRotation.y = game.movement.targetRot;
+    }
 }
 
 // Easing function for smooth movement
 function easeInOutCubic(t) {
     return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+}
+
+// Update camera rotation (mouse look and smoothing)
+function updateCamera(deltaTime) {
+    // Handle mouse look
+    if (controls.mouseLook.enabled && controls.mouseLook.locked) {
+        // Apply mouse movement to camera rotation
+        game.camera.targetRotation.y -= game.mouse.deltaX * controls.mouseLook.sensitivity;
+        game.camera.targetRotation.x -= game.mouse.deltaY * controls.mouseLook.sensitivity * (controls.mouseLook.invertY ? -1 : 1);
+
+        // Clamp vertical rotation to prevent camera flipping
+        game.camera.targetRotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, game.camera.targetRotation.x));
+
+        // Reset mouse delta
+        game.mouse.deltaX = 0;
+        game.mouse.deltaY = 0;
+    }
+
+    // Smooth camera rotation
+    const smoothing = controls.movement.cameraSmoothing;
+    game.camera.rotation.y = THREE.MathUtils.lerp(
+        game.camera.rotation.y,
+        game.camera.targetRotation.y,
+        smoothing
+    );
+    game.camera.rotation.x = THREE.MathUtils.lerp(
+        game.camera.rotation.x,
+        game.camera.targetRotation.x,
+        smoothing
+    );
+
+    // Update Three.js camera rotation
+    game.camera.obj.rotation.x = game.camera.rotation.x;
+    game.camera.obj.rotation.y = game.camera.rotation.y;
 }
 
 // Update movement animation
@@ -341,12 +520,17 @@ function updateMovement(deltaTime) {
             game.movement.targetRot,
             easedProgress
         );
+
+        // In keyboard mode, sync camera with player rotation
+        if (!controls.mouseLook.enabled) {
+            game.camera.rotation.y = game.player.rotation.y;
+            game.camera.targetRotation.y = game.player.rotation.y;
+        }
     }
 
-    // Update camera
-    game.camera.position.x = game.player.position.x;
-    game.camera.position.z = game.player.position.z;
-    game.camera.rotation.y = game.player.rotation.y;
+    // Update camera position to follow player
+    game.camera.obj.position.x = game.player.position.x;
+    game.camera.obj.position.z = game.player.position.z;
 
     // End movement when complete
     if (game.movement.progress >= 1) {
@@ -364,16 +548,16 @@ function init() {
     // Scene setup
     game.scene = new THREE.Scene();
 
-    // Initialize player
-    game.player = new Player(game.scene);
-
     // Camera setup (first-person view)
-    game.camera = new THREE.PerspectiveCamera(
+    const threeCamera = new THREE.PerspectiveCamera(
         75,
         window.innerWidth / window.innerHeight,
         0.1,
         1000
     );
+
+    // Store Three.js camera object in game.camera.obj
+    game.camera.obj = threeCamera;
 
     // Renderer setup
     game.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -414,11 +598,17 @@ function init() {
     game.player.position.x = spawnPos.x * 4;
     game.player.position.z = spawnPos.z * 4;
 
-    game.camera.position.set(
+    // Initialize camera position and rotation
+    game.camera.obj.position.set(
         game.player.position.x,
         game.player.position.y,
         game.player.position.z
     );
+
+    // Initialize camera rotation to match player
+    game.camera.rotation.y = game.player.rotation.y;
+    game.camera.targetRotation.y = game.player.rotation.y;
+    game.camera.obj.rotation.y = game.player.rotation.y;
 
     // Spawn enemies in the dungeon
     spawnEnemies();
@@ -458,9 +648,13 @@ function updateUI() {
     const healthPercent = game.player.health.getPercentage();
     const healthColor = healthPercent > 50 ? '#0f0' : healthPercent > 25 ? '#ff0' : '#f00';
 
+    // Control mode indicator
+    const controlMode = controls.mouseLook.enabled ? 'Mouse Look' : 'Classic';
+    const controlColor = controls.mouseLook.enabled ? '#0af' : '#0f0';
+
     const uiHTML = `
         <div style="font-size: 16px;">
-            <div style="margin-bottom: 10px;">Kings Field - Ready</div>
+            <div style="margin-bottom: 10px;">Kings Field - Modernized Controls</div>
             <div style="margin-bottom: 5px;">
                 Health: <span style="color: ${healthColor}">${game.player.health.current}/${game.player.health.max}</span>
             </div>
@@ -470,8 +664,22 @@ function updateUI() {
             <div style="font-size: 12px; opacity: 0.7;">
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | Q/E: Rotate | SPACE: Attack
+            <div style="font-size: 12px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.3); border-radius: 3px;">
+                <div style="color: ${controlColor}; margin-bottom: 5px; font-weight: bold;">
+                    Mode: ${controlMode}
+                </div>
+                <div style="opacity: 0.9; line-height: 1.4;">
+                    ${controls.mouseLook.enabled ? `
+                        <div>Mouse: Look | WASD: Move (Camera-relative)</div>
+                        <div>Shift: Sprint | F: Interact | Space: Attack</div>
+                        <div>M: Toggle Mouse Look</div>
+                        ${controls.mouseLook.locked ? '<div style="color: #0f0;">🔒 Cursor Locked</div>' : '<div style="color: #f80;">Click to lock cursor</div>'}
+                    ` : `
+                        <div>WASD: Move | Q/E: Rotate 90°</div>
+                        <div>Shift: Sprint | F: Interact | Space: Attack</div>
+                        <div>M: Enable Mouse Look</div>
+                    `}
+                </div>
             </div>
         </div>
     `;
@@ -480,8 +688,8 @@ function updateUI() {
 }
 
 function onWindowResize() {
-    game.camera.aspect = window.innerWidth / window.innerHeight;
-    game.camera.updateProjectionMatrix();
+    game.camera.obj.aspect = window.innerWidth / window.innerHeight;
+    game.camera.obj.updateProjectionMatrix();
     game.renderer.setSize(window.innerWidth, window.innerHeight);
 }
 
@@ -518,6 +726,9 @@ function animate() {
     const deltaTimeSec = game.clock.getDelta();
     const deltaTimeMs = deltaTimeSec * 1000;
 
+    // Update camera (mouse look and smoothing)
+    updateCamera(deltaTimeSec);
+
     // Update movement system
     updateMovement(deltaTimeSec);
 
@@ -530,7 +741,7 @@ function animate() {
     // Update atmospheric effects
     if (game.lighting) {
         game.lighting.update(game.time);
-        game.lighting.updatePlayerLight(game.camera.position);
+        game.lighting.updatePlayerLight(game.camera.obj.position);
     }
 
     // Animate torches
@@ -538,8 +749,14 @@ function animate() {
         game.dungeon.builder.animateTorches(game.time);
     }
 
+    // Update UI periodically (every 0.1 seconds) to show cursor lock status
+    if (!game.lastUIUpdate || game.time - game.lastUIUpdate > 0.1) {
+        updateUI();
+        game.lastUIUpdate = game.time;
+    }
+
     // Render
-    game.renderer.render(game.scene, game.camera);
+    game.renderer.render(game.scene, game.camera.obj);
 }
 
 // Start the game

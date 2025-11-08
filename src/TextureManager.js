@@ -172,101 +172,59 @@ export class TextureManager {
      */
     async createWallMaterial(variant = 'default') {
         return this.getCachedMaterial(`wall_${variant}`, async () => {
-            try {
-                const textureSet = await this.loadPBRSet('stone_brick', 'walls', {
-                    repeat: [2, 2]
-                });
-                return this.createPBRMaterial(textureSet, {
-                    roughness: 0.9,
-                    metalness: 0.05
-                });
-            } catch (error) {
-                console.warn('Using fallback wall material');
-                return this.createFallbackMaterial(0x3a3a3a, {
-                    roughness: 0.85,
-                    metalness: 0.15
-                });
-            }
+            // Use fallback materials to avoid WebGL texture limit errors
+            // TODO: Re-enable textures when texture atlas is implemented
+            return this.createFallbackMaterial(0x3a3a3a, {
+                roughness: 0.85,
+                metalness: 0.15
+            });
         });
     }
 
     async createFloorMaterial(variant = 'default') {
         return this.getCachedMaterial(`floor_${variant}`, async () => {
-            try {
-                const textureSet = await this.loadPBRSet('stone_floor', 'floors', {
-                    repeat: [1, 1]
-                });
-                return this.createPBRMaterial(textureSet, {
-                    roughness: 0.9,
-                    metalness: 0.1
-                });
-            } catch (error) {
-                console.warn('Using fallback floor material');
-                return this.createFallbackMaterial(0x2a2a2a, {
-                    roughness: 0.9,
-                    metalness: 0.1
-                });
-            }
+            // Use fallback materials to avoid WebGL texture limit errors
+            // TODO: Re-enable textures when texture atlas is implemented
+            return this.createFallbackMaterial(0x2a2a2a, {
+                roughness: 0.9,
+                metalness: 0.1
+            });
         });
     }
 
     async createCeilingMaterial(variant = 'default') {
         return this.getCachedMaterial(`ceiling_${variant}`, async () => {
-            try {
-                const textureSet = await this.loadPBRSet('rough_stone', 'ceilings', {
-                    repeat: [1, 1]
-                });
-                return this.createPBRMaterial(textureSet, {
-                    roughness: 0.8,
-                    metalness: 0.1,
-                    side: THREE.DoubleSide
-                });
-            } catch (error) {
-                console.warn('Using fallback ceiling material');
-                return this.createFallbackMaterial(0x1a1a1a, {
-                    roughness: 0.8,
-                    metalness: 0.1,
-                    side: THREE.DoubleSide
-                });
-            }
+            // Use fallback materials to avoid WebGL texture limit errors
+            // TODO: Re-enable textures when texture atlas is implemented
+            return this.createFallbackMaterial(0x1a1a1a, {
+                roughness: 0.8,
+                metalness: 0.1,
+                side: THREE.DoubleSide
+            });
         });
     }
 
     async createWoodMaterial(aged = true) {
         return this.getCachedMaterial(`wood_${aged ? 'aged' : 'fresh'}`, async () => {
-            try {
-                const textureName = aged ? 'wood_weathered' : 'wood_planks';
-                const textureSet = await this.loadPBRSet(textureName, 'props');
-                return this.createPBRMaterial(textureSet, {
-                    roughness: 0.8,
-                    metalness: 0.0
-                });
-            } catch (error) {
-                console.warn('Using fallback wood material');
-                return this.createFallbackMaterial(0x4a3020, {
-                    roughness: 0.8,
-                    metalness: 0.0
-                });
-            }
+            // Use fallback materials to avoid WebGL texture limit errors
+            // TODO: Re-enable textures when texture atlas is implemented
+            const color = aged ? 0x4a3020 : 0x6a4a2a;
+            return this.createFallbackMaterial(color, {
+                roughness: 0.8,
+                metalness: 0.0
+            });
         });
     }
 
     async createMetalMaterial(rusty = true) {
         return this.getCachedMaterial(`metal_${rusty ? 'rusty' : 'clean'}`, async () => {
-            try {
-                const textureName = rusty ? 'metal_rust' : 'metal_iron';
-                const textureSet = await this.loadPBRSet(textureName, 'props');
-                return this.createPBRMaterial(textureSet, {
-                    roughness: rusty ? 0.9 : 0.4,
-                    metalness: rusty ? 0.5 : 0.9
-                });
-            } catch (error) {
-                console.warn('Using fallback metal material');
-                return this.createFallbackMaterial(0x6a5a4a, {
-                    roughness: 0.7,
-                    metalness: 0.6
-                });
-            }
+            // Use fallback materials to avoid WebGL texture limit errors
+            // TODO: Re-enable textures when texture atlas is implemented
+            const color = rusty ? 0x6a5a4a : 0x8a8a8a;
+            return this.createFallbackMaterial(color, {
+                roughness: rusty ? 0.9 : 0.4,
+                metalness: rusty ? 0.5 : 0.9
+            });
         });
     }
 

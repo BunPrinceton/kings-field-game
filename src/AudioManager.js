@@ -70,7 +70,8 @@ export class AudioManager {
     loadSound(category, name, url, loop = false, positional = false) {
         return new Promise((resolve, reject) => {
             if (!this.categories[category]) {
-                reject(new Error(`Invalid category: ${category}`));
+                // Silently skip invalid categories
+                resolve(null);
                 return;
             }
 
@@ -97,8 +98,9 @@ export class AudioManager {
                 },
                 undefined,
                 (error) => {
-                    console.error(`Failed to load sound ${name}:`, error);
-                    reject(error);
+                    // Silently fail for missing audio files (graceful degradation)
+                    // Audio files are optional until assets are provided
+                    resolve(null);
                 }
             );
         });
@@ -112,7 +114,9 @@ export class AudioManager {
             const name = `${baseName}_${index}`;
             return this.loadSound(category, name, url, loop, positional);
         });
-        return Promise.all(promises);
+        // Filter out null results from failed loads
+        const results = await Promise.all(promises);
+        return results.filter(sound => sound !== null);
     }
 
     /**

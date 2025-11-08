@@ -540,11 +540,11 @@ async function init() {
     game.lighting.enableShadows(game.renderer);
 
     // Generate dungeon with POI system
-    game.dungeon.generator = new DungeonGenerator(40, 40, {
+    game.dungeon.generator = new DungeonGenerator(60, 60, {
         minRoomSize: 3,
         maxRoomSize: 7,
-        maxRooms: 25,
-        centerSymmetryRadius: 8,
+        maxRooms: 30,
+        centerSymmetryRadius: 10,
         hubCount: 3,
         treasureRoomCount: 4,
         safeRoomCount: 2,
@@ -566,11 +566,14 @@ async function init() {
     // Build dungeon geometry
     game.dungeon.builder = new DungeonBuilder(game.scene, game.dungeon.data, {
         cellSize: 4,
-        wallHeight: 3.5
+        wallHeight: 3.5,
+        useTextures: false  // Disabled to prevent WebGL texture limit errors
     });
     await game.dungeon.builder.build();
 
-    // Place decorations
+    // Place decorations - DISABLED to prevent WebGL texture limit errors
+    // TODO: Re-enable with texture-less materials or reduce decoration count
+    /*
     game.dungeon.decorations = new DecorationsManager(
         game.scene,
         game.dungeon.data,
@@ -582,8 +585,11 @@ async function init() {
         }
     );
     await game.dungeon.decorations.placeDecorations();
+    */
 
-    // Add atmospheric details
+    // Add atmospheric details - DISABLED to prevent WebGL texture limit errors
+    // TODO: Re-enable with simpler materials
+    /*
     game.dungeon.atmosphericDetails = new AtmosphericDetails(
         game.scene,
         game.dungeon.data,
@@ -595,6 +601,7 @@ async function init() {
     );
     game.dungeon.atmosphericDetails.addDetails();
     game.dungeon.atmosphericDetails.addDustParticles();
+    */
 
     // Initialize player (now as Player class instance)
     game.player = new Player(game.scene);

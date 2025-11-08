@@ -2,6 +2,8 @@ import * as THREE from 'three';
 import { DungeonGenerator } from './DungeonGenerator.js';
 import { DungeonBuilder } from './DungeonBuilder.js';
 import { AtmosphericLighting } from './AtmosphericLighting.js';
+import { AudioManager } from './AudioManager.js';
+import { SOUND_CONFIG } from './SoundConfig.js';
 
 // Health system class
 class Health {
@@ -181,6 +183,8 @@ const game = {
         data: null
     },
     lighting: null,
+    audio: null, // AudioManager instance
+    audioInitialized: false,
     time: 0,
     enemies: [],
     lastTime: 0,
@@ -189,9 +193,106 @@ const game = {
     }
 };
 
+// Audio initialization
+async function initAudio() {
+    if (game.audioInitialized) return;
+
+    console.log('Initializing audio system...');
+    const success = await game.audio.init();
+
+    if (!success) {
+        console.warn('Audio initialization failed - user interaction required');
+        return;
+    }
+
+    // Load sound files (gracefully handle missing files)
+    await loadSounds();
+
+    game.audioInitialized = true;
+    console.log('Audio system ready');
+
+    // Start ambient sounds
+    startAmbience();
+
+    // Update UI
+    updateUI();
+}
+
+// Load all sound files
+async function loadSounds() {
+    const loadPromises = [];
+
+    // Note: Many of these files may not exist yet
+    // The AudioManager will log warnings for missing files
+
+    // Load footstep variations
+    const footstepConfig = SOUND_CONFIG.footsteps.stone;
+    if (footstepConfig && footstepConfig.files.length > 0) {
+        footstepConfig.files.forEach((file, index) => {
+            loadPromises.push(
+                game.audio.loadSound('footsteps', `stone_${index}`, file, false, false)
+                    .catch(err => console.warn(`Could not load ${file}`))
+            );
+        });
+    }
+
+    // Load combat sounds
+    const combatSounds = SOUND_CONFIG.combat;
+    Object.entries(combatSounds).forEach(([soundName, config]) => {
+        config.files.forEach((file, index) => {
+            const name = config.files.length > 1 ? `${soundName}_${index}` : soundName;
+            loadPromises.push(
+                game.audio.loadSound('combat', name, file, false, config.positional)
+                    .catch(err => console.warn(`Could not load ${file}`))
+            );
+        });
+    });
+
+    // Load ambient sounds
+    const ambienceConfig = SOUND_CONFIG.ambience;
+    Object.entries(ambienceConfig).forEach(([soundName, config]) => {
+        config.files.forEach((file, index) => {
+            loadPromises.push(
+                game.audio.loadSound('ambience', soundName, file, config.loop, false)
+                    .catch(err => console.warn(`Could not load ${file}`))
+            );
+        });
+    });
+
+    // Load UI sounds
+    const uiConfig = SOUND_CONFIG.ui;
+    Object.entries(uiConfig).forEach(([soundName, config]) => {
+        config.files.forEach((file) => {
+            loadPromises.push(
+                game.audio.loadSound('ui', soundName, file, false, false)
+                    .catch(err => console.warn(`Could not load ${file}`))
+            );
+        });
+    });
+
+    // Wait for all sounds to attempt loading
+    await Promise.allSettled(loadPromises);
+    console.log('Sound loading complete (some files may be missing)');
+}
+
+// Start ambient background sounds
+function startAmbience() {
+    if (!game.audioInitialized) return;
+
+    // Fade in ambient sounds for smooth start
+    setTimeout(() => game.audio.fadeIn('ambience', 'dungeon_base', 3000), 500);
+    setTimeout(() => game.audio.fadeIn('ambience', 'water_drips', 4000), 2000);
+    setTimeout(() => game.audio.fadeIn('ambience', 'wind_echo', 5000), 4000);
+}
+
 // Input handling
 function setupInput() {
     window.addEventListener('keydown', (e) => {
+        // Initialize audio on first user interaction
+        if (!game.audioInitialized && game.audio) {
+            initAudio();
+        }
+
         // Handle attack
         if (e.code === 'Space') {
             e.preventDefault();
@@ -214,6 +315,13 @@ function setupInput() {
         // Handle movement release
         game.keys[e.key.toLowerCase()] = false;
     });
+
+    // Also try to init audio on click
+    window.addEventListener('click', () => {
+        if (!game.audioInitialized && game.audio) {
+            initAudio();
+        }
+    }, { once: true });
 }
 
 function handleInput(key) {
@@ -293,6 +401,12 @@ function move(direction) {
     game.movement.startPos.z = game.player.position.z;
     game.movement.targetPos.x = targetGridX * game.gridSize;
     game.movement.targetPos.z = targetGridZ * game.gridSize;
+
+    // Play footstep sound
+    if (game.audioInitialized) {
+        const numVariations = SOUND_CONFIG.footsteps.stone.files.length;
+        game.audio.playRandomVariation('footsteps', 'stone', numVariations, 150);
+    }
 }
 
 // Initiate rotation
@@ -374,6 +488,10 @@ function init() {
         0.1,
         1000
     );
+
+    // Initialize audio system
+    game.audio = new AudioManager(game.camera);
+    console.log('Audio system created (will initialize on first user interaction)');
 
     // Renderer setup
     game.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -458,6 +576,12 @@ function updateUI() {
     const healthPercent = game.player.health.getPercentage();
     const healthColor = healthPercent > 50 ? '#0f0' : healthPercent > 25 ? '#ff0' : '#f00';
 
+    const audioStatus = game.audioInitialized
+        ? '<span style="color: #0f0;">ENABLED</span>'
+        : '<span style="color: #ff0;">Click to enable</span>';
+
+    const masterVolume = game.audio ? Math.round(game.audio.masterVolume * 100) : 100;
+
     const uiHTML = `
         <div style="font-size: 16px;">
             <div style="margin-bottom: 10px;">Kings Field - Ready</div>
@@ -471,6 +595,22 @@ function updateUI() {
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                Audio: ${audioStatus}
+            </div>
+            ${game.audioInitialized ? `
+            <div style="font-size: 11px; opacity: 0.6; margin-top: 5px;">
+                <div style="margin-bottom: 3px;">
+                    Master Volume: ${masterVolume}%
+                    <button onclick="window.adjustMasterVolume(-0.1)" style="margin-left: 5px; padding: 2px 6px;">-</button>
+                    <button onclick="window.adjustMasterVolume(0.1)" style="padding: 2px 6px;">+</button>
+                </div>
+                <div style="margin-bottom: 3px;">
+                    <button onclick="window.toggleAudioCategory('ambience')" style="padding: 2px 6px; font-size: 10px;">Toggle Ambience</button>
+                    <button onclick="window.toggleAudioCategory('combat')" style="padding: 2px 6px; font-size: 10px;">Toggle Combat</button>
+                </div>
+            </div>
+            ` : ''}
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 10px;">
                 WASD: Move | Q/E: Rotate | SPACE: Attack
             </div>
         </div>
@@ -478,6 +618,21 @@ function updateUI() {
 
     document.querySelector('#ui').innerHTML = uiHTML;
 }
+
+// Audio control functions (exposed globally for UI buttons)
+window.adjustMasterVolume = function(delta) {
+    if (!game.audio) return;
+    const newVolume = Math.max(0, Math.min(1, game.audio.masterVolume + delta));
+    game.audio.setMasterVolume(newVolume);
+    updateUI();
+};
+
+window.toggleAudioCategory = function(category) {
+    if (!game.audio) return;
+    const currentVolume = game.audio.getCategoryVolume(category);
+    game.audio.setCategoryVolume(category, currentVolume > 0 ? 0 : 0.4);
+    updateUI();
+};
 
 function onWindowResize() {
     game.camera.aspect = window.innerWidth / window.innerHeight;
@@ -499,14 +654,37 @@ function update(deltaTime) {
     // Handle attack input
     if (game.input.attack) {
         const targetEnemy = game.player.attack(game.enemies);
+
+        // Play sword swing sound
+        if (game.audioInitialized) {
+            const swingVariations = SOUND_CONFIG.combat.sword_swing.files.length;
+            game.audio.playRandomVariation('combat', 'sword_swing', swingVariations, 100);
+        }
+
         if (targetEnemy) {
             const dead = targetEnemy.takeDamage(game.player.attackPower);
+
+            // Play hit sound
+            if (game.audioInitialized) {
+                const hitVariations = SOUND_CONFIG.combat.sword_hit.files.length;
+                game.audio.playRandomVariation('combat', 'sword_hit', hitVariations, 50);
+            }
+
             updateUI();
 
             if (dead) {
                 console.log('Enemy defeated!');
+                // Play death sound
+                if (game.audioInitialized) {
+                    const deathVariations = SOUND_CONFIG.combat.enemy_death.files.length;
+                    game.audio.playRandomVariation('combat', 'enemy_death', deathVariations, 100);
+                }
             }
+        } else if (game.audioInitialized) {
+            // Attack missed or on cooldown - play UI feedback
+            game.audio.play('ui', 'attack_failed', 200);
         }
+
         game.input.attack = false;
     }
 }

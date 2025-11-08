@@ -18,6 +18,28 @@ npm install
 npm run dev
 ```
 
+## Recent Fixes
+
+### WebGL Texture Unit Limit (Fixed: 2025-11-08)
+
+**Issue**: Game rendered only UI, no 3D geometry visible. Console showed:
+```
+THREE.WebGLProgram: Shader Error - FRAGMENT shader texture image units count exceeds MAX_TEXTURE_IMAGE_UNITS(16)
+```
+
+**Root Cause**:
+- Creating unique materials for every floor/wall/ceiling tile (thousands of materials)
+- Shadow-casting lights consuming texture units for shadow maps
+- Combined texture usage exceeded WebGL's 16 texture unit limit per shader
+
+**Solution**:
+- Implemented material caching in `DungeonBuilder` to reuse materials by color/properties
+- Disabled shadow mapping globally to reduce texture unit consumption
+- Added `getCachedMaterial()` method to prevent duplicate material creation
+- Material count reduced from thousands to dozens
+
+**Files Changed**: `src/DungeonBuilder.js`, `src/main.js`
+
 ## Parallel Development with Multiple Claude Instances
 
 This project is set up for parallel development using git worktrees and multiple Claude Code instances!

@@ -8,6 +8,8 @@ import { DecorationsManager } from './DecorationsManager.js';
 import { AtmosphericDetails } from './AtmosphericDetails.js';
 import { AudioManager } from './AudioManager.js';
 import { SOUND_CONFIG } from './SoundConfig.js';
+import { MinimapRenderer } from './MinimapRenderer.js';
+import { ViewmodelRenderer } from './ViewmodelRenderer.js';
 
 // Health system class
 class Health {
@@ -206,7 +208,9 @@ const game = {
     lastTime: 0,
     input: {
         attack: false
-    }
+    },
+    minimap: null, // MinimapRenderer instance
+    viewmodel: null // ViewmodelRenderer instance
 };
 
 // Audio initialization
@@ -659,6 +663,45 @@ async function init() {
     // Spawn enemies in the dungeon
     spawnEnemies();
 
+    // Initialize minimap
+    game.minimap = new MinimapRenderer(game.dungeon.data, {
+        size: 180,
+        scale: 3,
+        fogOfWar: true
+    });
+
+    // Add minimap to UI
+    const minimapContainer = document.createElement('div');
+    minimapContainer.className = 'minimap-container';
+    minimapContainer.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: rgba(10, 10, 10, 0.85);
+        border: 2px solid rgba(255, 255, 255, 0.15);
+        padding: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.6);
+        z-index: 1000;
+    `;
+    const minimapTitle = document.createElement('div');
+    minimapTitle.textContent = 'MAP';
+    minimapTitle.style.cssText = `
+        font-size: 12px;
+        color: rgba(184, 184, 184, 0.8);
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 4px;
+        text-align: center;
+        font-family: 'Courier New', monospace;
+    `;
+    minimapContainer.appendChild(minimapTitle);
+    minimapContainer.appendChild(game.minimap.getCanvas());
+    document.body.appendChild(minimapContainer);
+
+    // Initialize viewmodel renderer
+    game.viewmodel = new ViewmodelRenderer(game.scene, game.camera, game.renderer);
+    console.log('Viewmodel renderer initialized');
+
     // Handle window resize
     window.addEventListener('resize', onWindowResize);
 
@@ -777,6 +820,11 @@ function onWindowResize() {
     game.camera.aspect = window.innerWidth / window.innerHeight;
     game.camera.updateProjectionMatrix();
     game.renderer.setSize(window.innerWidth, window.innerHeight);
+
+    // Update viewmodel camera aspect ratio
+    if (game.viewmodel) {
+        game.viewmodel.onWindowResize();
+    }
 }
 
 function update(deltaTime) {
@@ -808,6 +856,11 @@ function update(deltaTime) {
         } else {
             // Still play attack animation even if no target
             game.weaponSystem.startAttack();
+        }
+
+        // Trigger viewmodel attack animation
+        if (game.viewmodel) {
+            game.viewmodel.startAttack();
         }
 
         game.input.attack = false;
@@ -901,8 +954,34 @@ function animate() {
         game.dungeon.atmosphericDetails.animateDust(game.time);
     }
 
-    // Render
+    // Check if player is moving for viewmodel bob
+    const playerIsMoving = Math.abs(game.movement.velocity.x) > 0.1 ||
+                          Math.abs(game.movement.velocity.z) > 0.1;
+
+    // Update viewmodel (hands + sword)
+    if (game.viewmodel) {
+        game.viewmodel.update(deltaTimeSec, playerIsMoving);
+    }
+
+    // Update minimap
+    if (game.minimap) {
+        game.minimap.render(
+            {
+                x: game.player.position.x,
+                z: game.player.position.z
+            },
+            game.player.rotation.y,
+            game.enemies
+        );
+    }
+
+    // Render main scene
     game.renderer.render(game.scene, game.camera);
+
+    // Render viewmodel on top (separate render pass)
+    if (game.viewmodel) {
+        game.viewmodel.render();
+    }
 }
 
 // Start the game

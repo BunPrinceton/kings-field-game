@@ -14,6 +14,7 @@ export class DungeonBuilder {
             wallHeight: config.wallHeight || 3,
             wallThickness: config.wallThickness || 0.2,
             useTextures: config.useTextures !== undefined ? config.useTextures : true,
+            collidableObjects: config.collidableObjects || null, // Array to add collidable walls to
             ...config
         };
 
@@ -247,8 +248,16 @@ export class DungeonBuilder {
 
             wall.position.set(wallX, this.config.wallHeight / 2, wallZ);
 
+            // Store grid position for collision detection
+            wall.userData.gridPos = { x, z: y };
+
             this.scene.add(wall);
             this.meshes.push(wall);
+
+            // Add to collidable objects if array provided
+            if (this.config.collidableObjects) {
+                this.config.collidableObjects.push(wall);
+            }
         }
     }
 

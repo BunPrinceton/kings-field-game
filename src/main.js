@@ -7,6 +7,7 @@ import { ArmorSystem } from './ArmorSystem.js';
 import { HitEffects } from './HitEffects.js';
 import { DecorationsManager } from './DecorationsManager.js';
 import { AtmosphericDetails } from './AtmosphericDetails.js';
+import { HomeDecorSystem } from './HomeDecorSystem.js';
 import { AudioManager } from './AudioManager.js';
 import { SOUND_CONFIG } from './SoundConfig.js';
 import { MinimapRenderer } from './MinimapRenderer.js';
@@ -15,6 +16,9 @@ import { ItemManager, Inventory } from './ItemManager.js';
 import { Sword } from './Sword.js';
 import { PaintingGallery } from './PaintingGallery.js';
 import { PaintingInteraction } from './PaintingInteraction.js';
+import { ChestManager } from './ChestManager.js';
+import { TrapManager } from './TrapManager.js';
+import { FurnitureDecorator } from './FurnitureDecorator.js';
 
 // Health system class
 class Health {
@@ -278,7 +282,9 @@ const game = {
     dungeon: {
         generator: null,
         builder: null,
-        data: null
+        data: null,
+        homeDecor: null,
+        furniture: null // FurnitureDecorator instance
     },
     lighting: null,
     audio: null, // AudioManager instance
@@ -291,8 +297,10 @@ const game = {
     },
     minimap: null, // MinimapRenderer instance
     viewmodel: null, // ViewmodelRenderer instance
-    paintingGallery: null, // PaintingGallery instance
+paintingGallery: null, // PaintingGallery instance
     paintingInteraction: null // PaintingInteraction instance
+chestManager: null, // ChestManager instance
+    trapManager: null // TrapManager instance
 };
 
 // Audio initialization
@@ -430,6 +438,48 @@ function setupPointerLock() {
     });
 }
 
+// Try to interact with nearby furniture
+function tryInteractWithFurniture() {
+    if (!game.dungeon.furniture) return;
+
+    const furnitureManager = game.dungeon.furniture.getFurnitureManager();
+    const playerPos = new THREE.Vector3(game.player.position.x, game.player.position.y, game.player.position.z);
+    const interactionRange = 3.0;
+
+    // Get camera direction to determine what player is looking at
+    const direction = new THREE.Vector3();
+    game.camera.getWorldDirection(direction);
+
+    // Cast a ray from player position in camera direction
+    const raycaster = new THREE.Raycaster(playerPos, direction, 0, interactionRange);
+
+    // Get all interactable furniture
+    const interactables = Array.from(furnitureManager.interactables.keys());
+
+    if (interactables.length === 0) return;
+
+    const intersects = raycaster.intersectObjects(interactables, true);
+
+    if (intersects.length > 0) {
+        // Find the root furniture object
+        let furnitureObject = intersects[0].object;
+        while (furnitureObject.parent && !furnitureManager.canInteract(furnitureObject)) {
+            furnitureObject = furnitureObject.parent;
+        }
+
+        if (furnitureManager.canInteract(furnitureObject)) {
+            const success = furnitureManager.interact(furnitureObject);
+            if (success) {
+                console.log(`Interacted with ${furnitureObject.userData.furnitureType}`);
+                // Play interaction sound if audio is initialized
+                if (game.audioInitialized) {
+                    // You could add specific sounds for different furniture types
+                }
+            }
+        }
+    }
+}
+
 // Input handling
 function setupInput() {
     window.addEventListener('keydown', (e) => {
@@ -442,6 +492,11 @@ function setupInput() {
         if (e.code === 'Space') {
             e.preventDefault();
             game.input.attack = true;
+        }
+
+        // Handle furniture interaction (E key)
+        if (e.code === 'KeyE') {
+            tryInteractWithFurniture();
         }
 
         // Handle sprint (Shift)
@@ -551,6 +606,17 @@ function setupInput() {
             game.armorSystem.repairArmor('shield', 100);
             console.log('Armor fully repaired');
             updateUI();
+        }
+
+        // Open chest - E key
+        if (e.key.toLowerCase() === 'e' && game.chestManager) {
+            const nearestChest = game.chestManager.checkInteraction(game.player.position, game.player);
+            if (nearestChest) {
+                const success = game.chestManager.interactWithChest(nearestChest, game.player);
+                if (success) {
+                    updateUI();
+                }
+            }
         }
 
         // Track key states
@@ -848,6 +914,20 @@ async function init() {
     await game.dungeon.decorations.placeDecorations();
     */
 
+    // Place furniture in rooms
+    game.dungeon.furniture = new FurnitureDecorator(
+        game.scene,
+        game.dungeon.data,
+        {
+            cellSize: 4,
+            wallHeight: 3.5,
+            furnitureDensity: 0.6
+        }
+    );
+    game.dungeon.furniture.decorateRooms();
+    game.dungeon.furniture.addDoorsToCorridors();
+    console.log('✓ Furniture placement complete');
+
     // Add atmospheric details - DISABLED to prevent WebGL texture limit errors
     // TODO: Re-enable with simpler materials
     /*
@@ -864,6 +944,38 @@ async function init() {
     game.dungeon.atmosphericDetails.addDustParticles();
     */
 
+    // Initialize Home Decor System - creates unique atmospheric rooms
+    console.log('Initializing Home Decor System...');
+    game.dungeon.homeDecor = new HomeDecorSystem(
+        game.scene,
+        game.dungeon.data,
+        {
+            cellSize: 4,
+            wallHeight: 3.5,
+            decorDensity: 0.7,
+            enableLighting: true
+        }
+    );
+    await game.dungeon.homeDecor.decorateAllRooms();
+    console.log('Home Decor System initialized successfully');
+
+    // Initialize Chest Manager
+    console.log('Initializing Chest Manager...');
+    game.chestManager = new ChestManager(game.scene, game.dungeon.data, game.itemManager, game.audio);
+    game.chestManager.placeChests();
+    console.log('Chest Manager initialized:', game.chestManager.getStats());
+
+    // Initialize Trap Manager
+    console.log('Initializing Trap Manager...');
+    game.trapManager = new TrapManager(game.scene, game.dungeon.data, game.audio);
+    game.trapManager.placeTraps();
+    console.log('Trap Manager initialized:', game.trapManager.getStats());
+
+    // Initialize player (now as Player class instance)
+    game.player = new Player(game.scene);
+
+    // Link armor system reference for easier access
+    game.armorSystem = game.player.armorSystem;
     // Set player spawn position
     const spawnPos = game.dungeon.generator.getSpawnPosition();
     game.player.position.x = spawnPos.x * 4;
@@ -1069,6 +1181,32 @@ function updateUI() {
         ? '<span style="color: #0f0;">ACTIVE</span>'
         : '<span style="color: #ff0;">Click to activate</span>';
 
+    // Check for nearby chest
+    let chestPrompt = '';
+    if (game.chestManager) {
+        const nearestChest = game.chestManager.getNearestChest(game.player.position);
+        if (nearestChest && nearestChest.distance < 2.5) {
+            const chest = nearestChest.chest;
+            if (chest.locked) {
+                chestPrompt = '<div style="font-size: 13px; color: #ff4400; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.6); border: 1px solid #ff4400;">Locked Chest (Need key)</div>';
+            } else if (!chest.opened) {
+                chestPrompt = '<div style="font-size: 13px; color: #ffaa00; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.6); border: 1px solid #ffaa00;">Press E to open chest</div>';
+            }
+        }
+    }
+
+    // Get chest and trap stats
+    let statsInfo = '';
+    if (game.chestManager && game.trapManager) {
+        const chestStats = game.chestManager.getStats();
+        const trapStats = game.trapManager.getStats();
+        statsInfo = `
+            <div style="font-size: 11px; opacity: 0.5; margin-top: 5px;">
+                Chests: ${chestStats.opened}/${chestStats.total} opened | Traps: ${trapStats.total}
+            </div>
+        `;
+    }
+
     const uiHTML = `
         <div style="font-size: 16px;">
             <div style="margin-bottom: 10px;">Kings Field - Real-time Controls</div>
@@ -1081,17 +1219,19 @@ function updateUI() {
             ${weaponInfo}
             ${inventoryInfo}
             ${armorInfo}
+            ${chestPrompt}
             <div style="font-size: 12px; opacity: 0.7; margin-top: 10px;">
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
+            ${statsInfo}
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
                 Mouse Look: ${mouseLockStatus}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | SHIFT: Sprint | SPACE: Attack | 1-4: Weapons | 5-9: Swords
+                WASD: Move | SHIFT: Sprint | SPACE: Attack | E: Interact
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                F1-F4: Armor | F5-F8: Helmets | F9-F12: Shields
+                1-4: Weapons | 5-9: Swords | F1-F4: Armor | F5-F8: Helmets | F9-F12: Shields
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
                 T: Test Damage | H: Heal | R: Repair Armor
@@ -1148,6 +1288,28 @@ function onWindowResize() {
 function update(deltaTime) {
     // Update player
     game.player.update(deltaTime);
+
+    // Update chest manager
+    if (game.chestManager) {
+        game.chestManager.update(deltaTime);
+    }
+
+    // Update trap manager
+    if (game.trapManager) {
+        game.trapManager.update(deltaTime);
+    }
+
+    // Check for trap triggers
+    if (game.trapManager) {
+        const triggeredTraps = game.trapManager.checkTraps(game.player.position, game.player);
+        if (triggeredTraps.length > 0) {
+            // Visual feedback for trap damage
+            if (game.hitEffects) {
+                game.hitEffects.triggerScreenShake(0.2, 0.1);
+            }
+            updateUI();
+        }
+    }
 
     // Update enemies and handle enemy attacks
     for (const enemy of game.enemies) {
@@ -1299,6 +1461,11 @@ function animate() {
     // Animate atmospheric details
     if (game.dungeon.atmosphericDetails) {
         game.dungeon.atmosphericDetails.animateDust(game.time);
+    }
+
+    // Animate home decor flames
+    if (game.dungeon.homeDecor) {
+        game.dungeon.homeDecor.animateFlames(game.time);
     }
 
     // Check if player is moving for viewmodel bob

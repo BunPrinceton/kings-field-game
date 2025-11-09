@@ -253,7 +253,8 @@ const game = {
         speed: 3.5, // Units per second
         sprintMultiplier: 1.8,
         friction: 0.85, // Deceleration when no input
-        isSprinting: false
+        isSprinting: false,
+        isMoving: false // Track if player is currently moving
     },
     // Mouse look state
     mouse: {
@@ -618,8 +619,10 @@ function updateMovement(deltaTime) {
     // Normalize diagonal movement
     if (moveX !== 0 || moveZ !== 0) {
         const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
-        moveX /= length;
-        moveZ /= length;
+        if (length > 0) { // Prevent division by zero
+            moveX /= length;
+            moveZ /= length;
+        }
     }
 
     // Get camera direction (yaw only, no pitch for movement)
@@ -682,9 +685,9 @@ function updateMovement(deltaTime) {
     game.camera.position.x = game.player.position.x;
     game.camera.position.z = game.player.position.z;
 
-    // Play footstep sounds when moving
-    const isMoving = Math.abs(game.movement.velocity.x) > 0.1 || Math.abs(game.movement.velocity.z) > 0.1;
-    if (isMoving && game.audioInitialized) {
+    // Track and play footstep sounds when moving
+    game.movement.isMoving = Math.abs(game.movement.velocity.x) > 0.1 || Math.abs(game.movement.velocity.z) > 0.1;
+    if (game.movement.isMoving && game.audioInitialized) {
         // Play footstep at intervals based on speed
         if (!game.lastFootstepTime) game.lastFootstepTime = 0;
         const footstepInterval = game.movement.isSprinting ? 300 : 450; // milliseconds
@@ -797,6 +800,22 @@ async function init() {
     });
     await game.dungeon.builder.build();
 
+    // Populate collidable objects for collision detection
+    // Use wall meshes from the builder
+    game.collidableObjects = game.dungeon.builder.meshes.filter(mesh => {
+        // Filter out floors and ceilings, keep only walls and decorations
+        return mesh.geometry instanceof THREE.BoxGeometry && mesh.position.y > 0.5;
+    });
+
+    // Store grid positions for walls based on dungeon data
+    for (const obj of game.collidableObjects) {
+        const gridX = Math.round(obj.position.x / 4);
+        const gridZ = Math.round(obj.position.z / 4);
+        obj.userData.gridPos = { x: gridX, z: gridZ };
+    }
+
+    console.log('Collision system initialized with', game.collidableObjects.length, 'objects');
+
     // Place decorations - DISABLED to prevent WebGL texture limit errors
     // TODO: Re-enable with texture-less materials or reduce decoration count
     /*
@@ -829,13 +848,7 @@ async function init() {
     game.dungeon.atmosphericDetails.addDustParticles();
     */
 
-    // Initialize player (now as Player class instance)
-    game.player = new Player(game.scene);
-
-    // Link armor system reference for easier access
-    game.armorSystem = game.player.armorSystem;
-
-    // Set player spawn position
+    // Set player spawn position (player already initialized earlier)
     const spawnPos = game.dungeon.generator.getSpawnPosition();
     game.player.position.x = spawnPos.x * 4;
     game.player.position.z = spawnPos.z * 4;

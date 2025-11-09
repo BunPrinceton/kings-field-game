@@ -574,9 +574,9 @@ async function init() {
 
     // Setup atmospheric lighting (brighter so you can see!)
     game.lighting = new AtmosphericLighting(game.scene, {
-        ambientIntensity: 0.5,
-        fogNear: 5,
-        fogFar: 30
+        ambientIntensity: 0.6,  // Slightly brighter for better visibility
+        fogNear: 3,             // Fog starts closer for atmosphere
+        fogFar: 25              // Extended view distance for exploration
     });
     game.lighting.setupFog();
     // Shadows disabled to prevent WebGL texture unit limit errors

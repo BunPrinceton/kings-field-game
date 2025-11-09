@@ -610,7 +610,8 @@ async function init() {
     game.dungeon.builder = new DungeonBuilder(game.scene, game.dungeon.data, {
         cellSize: 4,
         wallHeight: 3.5,
-        useTextures: false  // Disabled to prevent WebGL texture limit errors
+        useTextures: false,  // Disabled to prevent WebGL texture limit errors
+        collidableObjects: game.collidableObjects  // Pass array for collision detection
     });
     await game.dungeon.builder.build();
 
@@ -645,9 +646,6 @@ async function init() {
     game.dungeon.atmosphericDetails.addDetails();
     game.dungeon.atmosphericDetails.addDustParticles();
     */
-
-    // Initialize player (now as Player class instance)
-    game.player = new Player(game.scene);
 
     // Set player spawn position
     const spawnPos = game.dungeon.generator.getSpawnPosition();

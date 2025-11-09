@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <pattern id="redVelvet" x="0" y="0" width="20" height="20" patternUnits="userSpaceOnUse">
+      <rect width="20" height="20" fill="#8b0000"/>
+      <rect x="0" y="0" width="10" height="10" fill="#7a0000" opacity="0.3"/>
+      <rect x="10" y="10" width="10" height="10" fill="#7a0000" opacity="0.3"/>
+      <circle cx="5" cy="5" r="1" fill="#9a1010" opacity="0.5"/>
+      <circle cx="15" cy="15" r="1" fill="#9a1010" opacity="0.5"/>
+    </pattern>
+  </defs>
+  <rect width="512" height="512" fill="url(#redVelvet)"/>
+  <!-- Add some worn patches -->
+  <ellipse cx="100" cy="400" rx="30" ry="40" fill="#6a0000" opacity="0.2"/>
+  <ellipse cx="400" cy="100" rx="25" ry="35" fill="#6a0000" opacity="0.15"/>
+</svg>

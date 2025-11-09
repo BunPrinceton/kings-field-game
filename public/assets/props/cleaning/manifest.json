@@ -1,0 +1,166 @@
+{
+  "name": "Cleaning Props Asset Pack",
+  "version": "1.0.0",
+  "description": "Low-poly cleaning supplies and maintenance props for dungeon decoration",
+  "license": "CC0 / CC-BY 3.0 (see individual models)",
+  "models": [
+    {
+      "id": "broom_poly",
+      "name": "Broom",
+      "path": "models/broom_poly.glb",
+      "type": "cleaning_tool",
+      "scale": 1.0,
+      "source": "Poly by Google",
+      "license": "CC-BY 3.0",
+      "status": "needs_manual_download",
+      "download_url": "https://poly.pizza (search: broom by Poly by Google)",
+      "notes": "Low-poly broom model. Procedural fallback available."
+    },
+    {
+      "id": "mop_bucket",
+      "name": "Mop & Bucket",
+      "path": "models/mop_bucket.glb",
+      "type": "cleaning_tool",
+      "scale": 0.8,
+      "source": "J-Toastie",
+      "license": "CC0 / CC-BY",
+      "status": "needs_manual_download",
+      "download_url": "https://poly.pizza (search: mop bucket by J-Toastie)",
+      "notes": "Combined mop and bucket. Procedural fallback available."
+    },
+    {
+      "id": "bucket_polyhaven",
+      "name": "Wooden Bucket",
+      "path": "models/bucket.glb",
+      "type": "container",
+      "scale": 0.9,
+      "source": "Poly Haven",
+      "license": "CC0",
+      "status": "needs_manual_download",
+      "download_url": "https://polyhaven.com/a/wooden_bucket_01",
+      "notes": "High-quality wooden bucket. Download glTF 2K and convert to GLB, or use procedural fallback."
+    },
+    {
+      "id": "barrel_quaternius",
+      "name": "Barrel (Large)",
+      "path": "models/barrel_quaternius.glb",
+      "type": "container",
+      "scale": 1.0,
+      "source": "Quaternius",
+      "license": "CC0",
+      "status": "needs_manual_download",
+      "download_url": "https://poly.pizza (search: barrel by Quaternius) or https://quaternius.com",
+      "notes": "Standard wooden barrel. Procedural fallback available."
+    },
+    {
+      "id": "barrel_kenney",
+      "name": "Barrel (Small)",
+      "path": "models/barrel_kenney.glb",
+      "type": "container",
+      "scale": 0.8,
+      "source": "Kenney",
+      "license": "CC0",
+      "status": "needs_manual_download",
+      "download_url": "https://poly.pizza (search: barrel by Kenney) or https://kenney.nl/assets",
+      "notes": "Small wooden barrel. Procedural fallback available."
+    }
+  ],
+  "procedural_models": [
+    {
+      "id": "broom_procedural",
+      "name": "Procedural Broom",
+      "type": "cleaning_tool",
+      "description": "Simple geometric broom with wooden handle and bristles",
+      "fallback_for": "broom_poly"
+    },
+    {
+      "id": "mop_procedural",
+      "name": "Procedural Mop",
+      "type": "cleaning_tool",
+      "description": "Simple geometric mop with handle and cloth head",
+      "fallback_for": "mop_bucket"
+    },
+    {
+      "id": "bucket_procedural",
+      "name": "Procedural Bucket",
+      "type": "container",
+      "description": "Tapered cylinder bucket with wire handle",
+      "fallback_for": "bucket_polyhaven"
+    },
+    {
+      "id": "barrel_procedural",
+      "name": "Procedural Barrel",
+      "type": "container",
+      "description": "Wooden barrel with metal bands (large)",
+      "fallback_for": "barrel_quaternius"
+    },
+    {
+      "id": "barrel_small_procedural",
+      "name": "Procedural Barrel (Small)",
+      "type": "container",
+      "description": "Wooden barrel with metal bands (small)",
+      "fallback_for": "barrel_kenney"
+    },
+    {
+      "id": "crate_procedural",
+      "name": "Procedural Crate",
+      "type": "container",
+      "description": "Simple wooden crate"
+    },
+    {
+      "id": "sack_procedural",
+      "name": "Procedural Sack",
+      "type": "container",
+      "description": "Cloth sack"
+    },
+    {
+      "id": "brush_procedural",
+      "name": "Procedural Brush",
+      "type": "cleaning_tool",
+      "description": "Small hand brush"
+    },
+    {
+      "id": "rag_pile_procedural",
+      "name": "Procedural Rag Pile",
+      "type": "cleaning_tool",
+      "description": "Stack of cleaning rags"
+    }
+  ],
+  "prop_groups": {
+    "janitor_corner": {
+      "name": "Janitor's Corner",
+      "props": ["broom", "bucket", "mop", "rag_pile"],
+      "description": "Cleaning supplies grouped in corner"
+    },
+    "storage_pile": {
+      "name": "Storage Pile",
+      "props": ["barrel", "barrel", "barrel_small", "bucket", "crate"],
+      "description": "Mixed storage containers"
+    },
+    "lone_cleaner": {
+      "name": "Lone Cleaner",
+      "props": ["broom OR mop"],
+      "description": "Single cleaning tool leaning on wall"
+    },
+    "barrel_cluster": {
+      "name": "Barrel Cluster",
+      "props": ["barrel x2-4"],
+      "description": "Group of barrels"
+    },
+    "cleaning_station": {
+      "name": "Cleaning Station",
+      "props": ["broom", "mop", "bucket x2", "brush", "rag_pile"],
+      "description": "Organized cleaning supplies area"
+    }
+  },
+  "usage": {
+    "room_distribution": {
+      "storage_rooms": "4-6 props with high density",
+      "large_rooms": "1-2 prop groups in corners (40% chance)",
+      "medium_rooms": "Single prop or small group (20% chance)",
+      "small_rooms": "Single prop (10% chance)",
+      "hallways": "Bucket against wall (8% chance)"
+    },
+    "integration": "Use CleaningPropsDecorator to automatically place props based on room type and size"
+  }
+}

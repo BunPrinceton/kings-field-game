@@ -2034,5 +2034,65 @@ function animate() {
     }
 }
 
+/**
+ * Cleanup all game resources
+ * Called on page unload or game reset
+ */
+function cleanup() {
+    console.log('Cleaning up game resources...');
+
+    // Dispose painting system
+    if (game.paintingGallery) {
+        game.paintingGallery.clearCache();
+        game.paintingGallery.dispose();
+    }
+
+    // Dispose furniture
+    if (game.dungeon?.furniture?.furnitureManager) {
+        game.dungeon.furniture.furnitureManager.dispose();
+    }
+
+    // Dispose home decor
+    if (game.dungeon?.homeDecor) {
+        game.dungeon.homeDecor.dispose();
+    }
+
+    // Dispose trap manager
+    if (game.trapManager) {
+        game.trapManager.destroy();
+    }
+
+    // Dispose renderer
+    if (game.renderer) {
+        game.renderer.dispose();
+    }
+
+    console.log('Cleanup complete');
+}
+
+/**
+ * Log current WebGL resource usage
+ * Helpful for debugging memory/performance
+ */
+function logResourceStats() {
+    if (!game.renderer) return;
+
+    const info = game.renderer.info;
+    console.log('=== Resource Stats ===');
+    console.log('Geometries:', info.memory.geometries);
+    console.log('Textures:', info.memory.textures);
+    console.log('Draw Calls:', info.render.calls);
+    console.log('Triangles:', info.render.triangles);
+    console.log('Points:', info.render.points);
+    console.log('Lines:', info.render.lines);
+    console.log('=====================');
+}
+
+// Expose globally for debugging
+window.logResourceStats = logResourceStats;
+
+// Call cleanup on page unload
+window.addEventListener('beforeunload', cleanup);
+
 // Start the game
 init();

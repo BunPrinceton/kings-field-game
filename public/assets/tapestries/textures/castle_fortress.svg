@@ -1,0 +1,50 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Shield background -->
+  <path d="M256 32 L464 96 L464 256 Q464 384 256 480 Q48 384 48 256 L48 96 Z"
+        fill="#4a0e0e" stroke="#8b7355" stroke-width="8"/>
+
+  <!-- Castle -->
+  <g transform="translate(256,300)">
+    <!-- Castle walls -->
+    <rect x="-80" y="-40" width="160" height="80" fill="#5a5a5a"/>
+
+    <!-- Castle towers -->
+    <rect x="-100" y="-80" width="35" height="120" fill="#5a5a5a"/>
+    <rect x="65" y="-80" width="35" height="120" fill="#5a5a5a"/>
+
+    <!-- Tower tops -->
+    <rect x="-105" y="-90" width="45" height="10" fill="#8b7355"/>
+    <rect x="60" y="-90" width="45" height="10" fill="#8b7355"/>
+
+    <!-- Crenellations -->
+    <rect x="-102" y="-100" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="-85" y="-100" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="62" y="-100" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="79" y="-100" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="-75" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="-55" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="-35" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="-15" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="5" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="25" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="45" y="-50" width="10" height="10" fill="#5a5a5a"/>
+    <rect x="65" y="-50" width="10" height="10" fill="#5a5a5a"/>
+
+    <!-- Central tower -->
+    <rect x="-25" y="-100" width="50" height="140" fill="#5a5a5a"/>
+    <path d="M-30,-100 L0,-130 L30,-100 Z" fill="#8b7355"/>
+
+    <!-- Windows -->
+    <rect x="-90" y="-60" width="15" height="20" fill="#1a1a2e"/>
+    <rect x="75" y="-60" width="15" height="20" fill="#1a1a2e"/>
+    <rect x="-70" y="-20" width="12" height="15" fill="#1a1a2e"/>
+    <rect x="-50" y="-20" width="12" height="15" fill="#1a1a2e"/>
+    <rect x="38" y="-20" width="12" height="15" fill="#1a1a2e"/>
+    <rect x="58" y="-20" width="12" height="15" fill="#1a1a2e"/>
+    <rect x="-10" y="-80" width="20" height="25" fill="#1a1a2e"/>
+
+    <!-- Main gate -->
+    <path d="M-20,40 L-20,10 Q-20,0 -10,0 L10,0 Q20,0 20,10 L20,40 Z" fill="#1a1a2e"/>
+    <circle cx="0" cy="-110" r="8" fill="#d4af37"/>
+  </g>
+</svg>

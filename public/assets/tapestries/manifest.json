@@ -1,0 +1,123 @@
+{
+  "models": [
+    {
+      "id": "war_banner",
+      "path": "models/WarBanner.blend",
+      "format": "blend",
+      "animated": true,
+      "notes": "Needs Blender conversion to GLB format"
+    }
+  ],
+  "heraldics": [
+    {
+      "id": "dragon_crest",
+      "path": "textures/dragon_crest.svg",
+      "theme": "royal",
+      "colors": ["red", "gold"],
+      "description": "Red dragon on dark shield with gold accents"
+    },
+    {
+      "id": "royal_lion",
+      "path": "textures/royal_lion.svg",
+      "theme": "royal",
+      "colors": ["gold", "blue"],
+      "description": "Gold crowned lion rampant on blue shield"
+    },
+    {
+      "id": "eagle_emblem",
+      "path": "textures/eagle_emblem.svg",
+      "theme": "military",
+      "colors": ["black", "gold"],
+      "description": "Black eagle with spread wings on crimson shield"
+    },
+    {
+      "id": "crown_royal",
+      "path": "textures/crown_royal.svg",
+      "theme": "royal",
+      "colors": ["gold", "red", "blue"],
+      "description": "Royal crown with jewels on dark shield"
+    },
+    {
+      "id": "sword_cross",
+      "path": "textures/sword_cross.svg",
+      "theme": "military",
+      "colors": ["silver", "brown", "gold"],
+      "description": "Crossed swords on dark blue-grey shield"
+    },
+    {
+      "id": "castle_fortress",
+      "path": "textures/castle_fortress.svg",
+      "theme": "noble",
+      "colors": ["grey", "brown"],
+      "description": "Fortress castle on crimson shield"
+    }
+  ],
+  "fabrics": [
+    {
+      "id": "red_velvet",
+      "path": "fabrics/red_velvet.svg",
+      "material": "velvet",
+      "color": "crimson",
+      "quality": "royal",
+      "description": "Deep red velvet with worn patches"
+    },
+    {
+      "id": "blue_silk",
+      "path": "fabrics/blue_silk.svg",
+      "material": "silk",
+      "color": "navy",
+      "quality": "noble",
+      "description": "Navy blue silk with shimmer effect"
+    },
+    {
+      "id": "green_linen",
+      "path": "fabrics/green_linen.svg",
+      "material": "linen",
+      "color": "forest",
+      "quality": "common",
+      "description": "Forest green linen with weathering"
+    },
+    {
+      "id": "gold_brocade",
+      "path": "fabrics/gold_brocade.svg",
+      "material": "brocade",
+      "color": "gold",
+      "quality": "royal",
+      "description": "Gold and brown brocade with decorative pattern"
+    }
+  ],
+  "tapestry_types": [
+    {
+      "name": "vertical_banner",
+      "size": [1, 3],
+      "locations": ["hallway", "corridor"],
+      "rarity": 0.3
+    },
+    {
+      "name": "small_banner",
+      "size": [1, 2],
+      "locations": ["small_room", "chamber"],
+      "rarity": 0.25
+    },
+    {
+      "name": "medium_tapestry",
+      "size": [2, 2],
+      "locations": ["room", "hall"],
+      "rarity": 0.2
+    },
+    {
+      "name": "large_tapestry",
+      "size": [4, 3],
+      "locations": ["throne_room", "grand_hall", "great_hall"],
+      "rarity": 0.15
+    }
+  ],
+  "placement_rules": {
+    "wall_coverage": [0.15, 0.25],
+    "min_wall_width": 2,
+    "min_wall_height": 2,
+    "wall_offset": 0.02,
+    "prefer_interior": true,
+    "avoid_corners": true
+  }
+}

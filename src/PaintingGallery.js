@@ -238,6 +238,16 @@ export class PaintingGallery {
         texture.needsUpdate = true;
         this.textureCache.set(cacheKey, texture);
 
+        // Limit texture cache size to prevent memory bloat
+        const MAX_TEXTURE_CACHE_SIZE = 50;
+        if (this.textureCache.size > MAX_TEXTURE_CACHE_SIZE) {
+            // Remove oldest texture (first in map)
+            const firstKey = this.textureCache.keys().next().value;
+            const oldTexture = this.textureCache.get(firstKey);
+            if (oldTexture) oldTexture.dispose();
+            this.textureCache.delete(firstKey);
+        }
+
         return texture;
     }
 

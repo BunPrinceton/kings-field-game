@@ -1,0 +1,230 @@
+CARPET PLACEMENT LOGIC FLOWCHART
+=================================
+
+For Each Room in Dungeon:
+│
+├─ Roll random chance (0-1)
+│  │
+│  └─ If < carpetDensity (0.35 by default):
+│     │
+│     ├─ Determine Room Type (from DungeonGenerator POI):
+│     │  │
+│     │  ├─ BOSS or LANDMARK:
+│     │  │  ├─ Check room size >= 6x6?
+│     │  │  │  ├─ YES: Place 4x4 Grand Carpet (Yellow/Ornate)
+│     │  │  │  └─ NO: Fall back to Medium Carpet
+│     │  │
+│     │  ├─ HUB:
+│     │  │  ├─ Check room size >= 5x5?
+│     │  │  │  ├─ YES: Place 3x3 Large Carpet (Blue/Plain)
+│     │  │  │  └─ NO: Fall back to Medium Carpet
+│     │  │
+│     │  ├─ TREASURE or SAFE:
+│     │  │  └─ Place 2x2 Medium Carpet (Beige/Textured)
+│     │  │
+│     │  └─ STANDARD (default):
+│     │     └─ Random choice:
+│     │        ├─ 50%: Place 1x1 Small Mat (Brown/Worn)
+│     │        └─ 50%: Place 2x2 Medium Mat (Brown/Worn)
+│     │
+│     ├─ Calculate Room Center (world coordinates):
+│     │  centerX = (room.x + room.width/2) * cellSize
+│     │  centerZ = (room.y + room.height/2) * cellSize
+│     │
+│     ├─ Apply Random Rotation:
+│     │  rotation = random * (0.05 to 0.2 radians)
+│     │  (±3-12 degrees for natural variation)
+│     │
+│     ├─ Create Carpet Mesh:
+│     │  ├─ Geometry: PlaneGeometry(width*cellSize, depth*cellSize)
+│     │  ├─ Material: MeshStandardMaterial with PBR maps:
+│     │  │  ├─ map: diffuse/color texture
+│     │  │  ├─ normalMap: surface detail
+│     │  │  ├─ roughnessMap: shininess
+│     │  │  ├─ aoMap: ambient shadows
+│     │  │  └─ displacementMap: height detail (if available)
+│     │  │
+│     │  ├─ Texture Repeat: Set based on carpet size
+│     │  │  repeat.set(width, depth)
+│     │  │
+│     │  └─ Position:
+│     │     ├─ X: room center X
+│     │     ├─ Y: 0.01 (above floor, prevents z-fighting)
+│     │     ├─ Z: room center Z
+│     │     └─ Rotation: -90° on X axis (horizontal), random on Z
+│     │
+│     └─ Add to Scene + Track in carpets[]
+│
+└─ If random chance failed: Skip this room (no carpet)
+
+
+CARPET TYPES & ROOM MAPPING
+============================
+
+ID             | Color  | Size  | Room Types           | Texture Source
+---------------|--------|-------|---------------------|----------------
+dirty_carpet   | Brown  | 1-2x1-2 | Standard, Storage  | Poly Haven
+carpet_011     | Yellow | 4x4   | Boss, Landmark      | ambientCG
+carpet_012     | Blue   | 3x3   | Hub, Library        | ambientCG
+carpet_016     | Beige  | 2x2   | Treasure, Safe      | ambientCG
+
+
+EXAMPLE PLACEMENT SCENARIOS
+============================
+
+Scenario 1: Boss Room (8x8)
+---------------------------
+Room Size: 8 x 8 units (>= 6x6 threshold)
+Room Type: POIType.BOSS
+Result: 4x4 Yellow Ornate Carpet (carpet_011)
+Position: Room center
+Rotation: Random ±3-6 degrees
+PBR Maps: Color, Normal, Roughness, AO, Displacement
+
+Scenario 2: Hub Room (5x5)
+---------------------------
+Room Size: 5 x 5 units (>= 5x5 threshold)
+Room Type: POIType.HUB
+Result: 3x3 Blue Plain Carpet (carpet_012)
+Position: Room center
+Rotation: Random ±3-6 degrees
+PBR Maps: Color, Normal, Roughness, AO, Displacement
+
+Scenario 3: Small Boss Room (4x4)
+----------------------------------
+Room Size: 4 x 4 units (< 6x6 threshold)
+Room Type: POIType.BOSS
+Result: FALLBACK to 2x2 Beige Carpet (carpet_016)
+Reason: 4x4 carpet too large, auto-downgrade
+Position: Room center
+Rotation: Random ±3-12 degrees
+
+Scenario 4: Standard Room (3x3)
+--------------------------------
+Room Size: 3 x 3 units
+Room Type: POIType.STANDARD
+Random Roll: 50/50 chance
+Result: Either 1x1 OR 2x2 Brown Worn Carpet (dirty_carpet)
+Position: Room center
+Rotation: Random ±6-12 degrees
+PBR Maps: Diffuse, Normal, Roughness, AO
+
+Scenario 5: Treasure Room (6x6)
+--------------------------------
+Room Size: 6 x 6 units
+Room Type: POIType.TREASURE
+Result: 2x2 Beige Textured Carpet (carpet_016)
+Position: Room center
+Rotation: Random ±3-12 degrees
+PBR Maps: Color, Normal, Roughness, AO, Displacement
+
+
+DENSITY CALCULATION
+===================
+
+Default carpetDensity: 0.35 (35%)
+
+Example Dungeon: 20 rooms
+Expected Carpets: 20 * 0.35 = ~7 carpets
+
+Distribution might be:
+- 1-2 Grand Carpets (boss/landmark rooms)
+- 1-2 Large Carpets (hub rooms)
+- 2-3 Medium Carpets (treasure/safe rooms)
+- 1-2 Small Mats (standard rooms)
+
+Actual count varies due to:
+1. Random selection (carpetDensity is probability)
+2. Room size constraints (fallbacks)
+3. Room type distribution in dungeon
+
+
+TECHNICAL DETAILS
+=================
+
+Texture Setup:
+--------------
+- Wrap Mode: THREE.RepeatWrapping (allows tiling)
+- Anisotropic Filtering: 4 (better quality at angles)
+- Repeat: Based on carpet size (width x depth)
+
+Material Properties:
+--------------------
+- Type: MeshStandardMaterial (PBR-based)
+- Side: DoubleSide (visible from both sides)
+- Displacement Scale: 0.05 (subtle height variation)
+
+Position Calculation:
+---------------------
+worldX = (gridX + gridWidth/2) * cellSize
+worldZ = (gridY + gridHeight/2) * cellSize
+worldY = 0.01 (small elevation to avoid z-fighting)
+
+Rotation:
+---------
+X-axis: -π/2 (-90°) to make horizontal
+Z-axis: random * variation (depends on room type)
+  - Grand: ±0.05 rad (±3°)
+  - Large: ±0.05 rad (±3°)
+  - Medium: ±0.1 rad (±6°)
+  - Small: ±0.2 rad (±12°)
+
+
+OPTIMIZATION STRATEGIES
+=======================
+
+Memory:
+-------
+✓ Shared textures (loaded once, used many times)
+✓ Proper disposal in clearCarpets()
+✓ No dynamic updates (static geometry)
+
+Performance:
+------------
+✓ Static meshes (no animation overhead)
+✓ Reasonable density (35% vs 100%)
+✓ Single draw call per carpet
+✓ No physics/collision (visual only)
+
+Quality vs Size:
+----------------
+Current: 2K textures (2048x2048)
+  - High quality, good for close viewing
+  - Total: 119 MB
+
+Option 1: Use 1K textures (1024x1024)
+  - Lower quality, still acceptable
+  - Total: ~30 MB (75% reduction)
+
+Option 2: Reduce density to 20%
+  - Same quality, fewer carpets
+  - ~40% fewer draw calls
+
+
+FUTURE ENHANCEMENTS
+===================
+
+1. Multiple Carpets per Room:
+   - Place 2-3 small carpets in large rooms
+   - Create carpet "clusters" near furniture
+
+2. Hall Runners:
+   - Detect long corridors
+   - Place 4x2 hall_runner carpets
+
+3. Layered Carpets:
+   - Small carpet on top of large carpet
+   - Different colors/styles
+
+4. Physics Interaction:
+   - Carpet edges curl up slightly
+   - Player footsteps move carpet
+
+5. Hidden Items:
+   - Items hidden under carpets
+   - Interaction to "lift" carpet
+
+6. Procedural Wear:
+   - Add wear patterns near doorways
+   - Fade/stain variations
+

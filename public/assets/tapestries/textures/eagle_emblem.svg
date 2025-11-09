@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Shield background -->
+  <path d="M256 32 L464 96 L464 256 Q464 384 256 480 Q48 384 48 256 L48 96 Z"
+        fill="#4a0e0e" stroke="#d4af37" stroke-width="8"/>
+
+  <!-- Eagle -->
+  <g transform="translate(256,256)">
+    <!-- Eagle body -->
+    <ellipse cx="0" cy="0" rx="35" ry="55" fill="#2c2c2c"/>
+
+    <!-- Eagle head -->
+    <circle cx="0" cy="-50" r="28" fill="#2c2c2c"/>
+
+    <!-- Eagle beak -->
+    <path d="M0,-50 L20,-45 L15,-50 Z" fill="#d4af37"/>
+
+    <!-- Eagle eyes -->
+    <circle cx="-8" cy="-55" r="4" fill="#d4af37"/>
+    <circle cx="8" cy="-55" r="4" fill="#d4af37"/>
+
+    <!-- Left wing spread -->
+    <path d="M-35,-20 Q-80,-40 -110,-30 Q-130,-20 -140,0 Q-130,10 -100,0 Q-80,-5 -40,10 Z"
+          fill="#2c2c2c" stroke="#d4af37" stroke-width="2"/>
+    <path d="M-45,-15 L-90,-25 M-50,-5 L-100,-5 M-45,5 L-95,10"
+          stroke="#d4af37" stroke-width="1.5"/>
+
+    <!-- Right wing spread -->
+    <path d="M35,-20 Q80,-40 110,-30 Q130,-20 140,0 Q130,10 100,0 Q80,-5 40,10 Z"
+          fill="#2c2c2c" stroke="#d4af37" stroke-width="2"/>
+    <path d="M45,-15 L90,-25 M50,-5 L100,-5 M45,5 L95,10"
+          stroke="#d4af37" stroke-width="1.5"/>
+
+    <!-- Eagle talons -->
+    <path d="M-15,50 L-20,70 M-10,50 L-10,70 M-5,50 L0,70"
+          stroke="#d4af37" stroke-width="2" stroke-linecap="round"/>
+    <path d="M15,50 L20,70 M10,50 L10,70 M5,50 L0,70"
+          stroke="#d4af37" stroke-width="2" stroke-linecap="round"/>
+
+    <!-- Tail feathers -->
+    <path d="M-10,55 L-15,75 L-5,75 Z M0,55 L-3,75 L3,75 Z M10,55 L5,75 L15,75 Z"
+          fill="#2c2c2c" stroke="#d4af37" stroke-width="1"/>
+  </g>
+</svg>

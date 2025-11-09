@@ -65,6 +65,17 @@ export class Trap {
 
     destroy() {
         if (this.mesh) {
+            // Dispose materials (but NOT shared geometries from pool)
+            this.mesh.traverse(child => {
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(m => m.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
+                }
+                // Note: Don't dispose geometry if it's from SHARED_TRAP_GEOMETRIES
+            });
             this.scene.remove(this.mesh);
         }
     }
@@ -84,7 +95,7 @@ export class SpikeTrap extends Trap {
         this.mesh.position.set(this.position.x, this.position.y, this.position.z);
 
         // Pressure plate (OBVIOUS - bright red/orange glow)
-        const plateGeometry = new THREE.BoxGeometry(1.2, 0.05, 1.2);
+        const plateGeometry = SHARED_TRAP_GEOMETRIES.plate;
         const plateMaterial = new THREE.MeshStandardMaterial({
             color: 0x884400,
             roughness: 0.7,
@@ -124,7 +135,7 @@ export class SpikeTrap extends Trap {
         ];
 
         spikePositions.forEach(([x, z]) => {
-            const spikeGeometry = new THREE.ConeGeometry(0.08, 0.6, 6);
+            const spikeGeometry = SHARED_TRAP_GEOMETRIES.spikeCone;
             const spikeMaterial = new THREE.MeshStandardMaterial({
                 color: 0x666666,
                 roughness: 0.5,

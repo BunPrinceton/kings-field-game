@@ -1,0 +1,100 @@
+{
+  "carpets": {
+    "textures": [
+      {
+        "id": "dirty_carpet",
+        "name": "Dirty Worn Carpet",
+        "path": "textures/dirty_carpet/",
+        "source": "Poly Haven",
+        "license": "CC0",
+        "style": "worn",
+        "color": "brown",
+        "maps": {
+          "diffuse": "dirty_carpet_diff_2k.jpg",
+          "normal": "dirty_carpet_nor_gl_2k.jpg",
+          "roughness": "dirty_carpet_rough_2k.jpg",
+          "ao": "dirty_carpet_ao_2k.jpg"
+        },
+        "resolution": "2048x2048",
+        "suitableFor": ["storage", "small_rooms", "dungeons"]
+      },
+      {
+        "id": "carpet_011",
+        "name": "Light Yellow Carpet",
+        "path": "textures/carpet_011/",
+        "source": "ambientCG",
+        "license": "CC0",
+        "style": "ornate",
+        "color": "yellow",
+        "maps": {
+          "diffuse": "Carpet011_2K-JPG_Color.jpg",
+          "normal": "Carpet011_2K-JPG_NormalGL.jpg",
+          "roughness": "Carpet011_2K-JPG_Roughness.jpg",
+          "ao": "Carpet011_2K-JPG_AmbientOcclusion.jpg",
+          "displacement": "Carpet011_2K-JPG_Displacement.jpg"
+        },
+        "resolution": "2048x2048",
+        "suitableFor": ["throne_rooms", "large_rooms", "ceremonial"]
+      },
+      {
+        "id": "carpet_012",
+        "name": "Dark Blue Carpet",
+        "path": "textures/carpet_012/",
+        "source": "ambientCG",
+        "license": "CC0",
+        "style": "plain",
+        "color": "blue",
+        "maps": {
+          "diffuse": "Carpet012_2K-JPG_Color.jpg",
+          "normal": "Carpet012_2K-JPG_NormalGL.jpg",
+          "roughness": "Carpet012_2K-JPG_Roughness.jpg",
+          "ao": "Carpet012_2K-JPG_AmbientOcclusion.jpg",
+          "displacement": "Carpet012_2K-JPG_Displacement.jpg"
+        },
+        "resolution": "2048x2048",
+        "suitableFor": ["medium_rooms", "libraries", "studies"]
+      },
+      {
+        "id": "carpet_016",
+        "name": "Beige Wool Carpet",
+        "path": "textures/carpet_016/",
+        "source": "ambientCG",
+        "license": "CC0",
+        "style": "textured",
+        "color": "beige",
+        "maps": {
+          "diffuse": "Carpet016_2K-JPG_Color.jpg",
+          "normal": "Carpet016_2K-JPG_NormalGL.jpg",
+          "roughness": "Carpet016_2K-JPG_Roughness.jpg",
+          "ao": "Carpet016_2K-JPG_AmbientOcclusion.jpg",
+          "displacement": "Carpet016_2K-JPG_Displacement.jpg"
+        },
+        "resolution": "2048x2048",
+        "suitableFor": ["medium_rooms", "bedrooms", "living_areas"]
+      }
+    ],
+    "models": [],
+    "presets": {
+      "small_mat": {
+        "size": [1, 1],
+        "description": "Small floor mat (1x1 units)"
+      },
+      "medium_rug": {
+        "size": [2, 2],
+        "description": "Medium rug (2x2 units)"
+      },
+      "large_rug": {
+        "size": [3, 3],
+        "description": "Large rug (3x3 units)"
+      },
+      "hall_runner": {
+        "size": [4, 2],
+        "description": "Hall runner (4x2 units)"
+      },
+      "grand_carpet": {
+        "size": [4, 4],
+        "description": "Grand carpet for throne rooms (4x4 units)"
+      }
+    }
+  }
+}

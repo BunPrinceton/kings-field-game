@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Shield background -->
+  <path d="M256 32 L464 96 L464 256 Q464 384 256 480 Q48 384 48 256 L48 96 Z"
+        fill="#1a1a2e" stroke="#d4af37" stroke-width="8"/>
+
+  <!-- Dragon silhouette -->
+  <g transform="translate(256,256) scale(0.8)">
+    <!-- Dragon head -->
+    <path d="M-40,-80 Q-60,-100 -50,-120 L-30,-110 Q-40,-90 -20,-80 Z"
+          fill="#c41e3a"/>
+    <circle cx="-35" cy="-95" r="3" fill="#d4af37"/>
+
+    <!-- Dragon body -->
+    <ellipse cx="0" cy="-40" rx="50" ry="60" fill="#c41e3a"/>
+
+    <!-- Dragon wings -->
+    <path d="M-50,-60 Q-120,-40 -140,-20 Q-120,0 -80,-10 L-50,-30 Z"
+          fill="#8b0000" opacity="0.8"/>
+    <path d="M50,-60 Q120,-40 140,-20 Q120,0 80,-10 L50,-30 Z"
+          fill="#8b0000" opacity="0.8"/>
+
+    <!-- Dragon tail -->
+    <path d="M0,20 Q-20,60 -10,100 L0,95 Q10,60 0,20 Z"
+          fill="#c41e3a"/>
+
+    <!-- Dragon legs -->
+    <path d="M-30,0 L-40,40 L-35,45 L-25,5 Z" fill="#c41e3a"/>
+    <path d="M30,0 L40,40 L35,45 L25,5 Z" fill="#c41e3a"/>
+
+    <!-- Gold accent lines -->
+    <path d="M-40,-50 Q0,-60 40,-50" stroke="#d4af37" stroke-width="2" fill="none"/>
+    <circle cx="0" cy="-50" r="8" fill="#d4af37"/>
+  </g>
+</svg>

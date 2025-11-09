@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Shield background -->
+  <path d="M256 32 L464 96 L464 256 Q464 384 256 480 Q48 384 48 256 L48 96 Z"
+        fill="#2c3e50" stroke="#c0c0c0" stroke-width="8"/>
+
+  <!-- Crossed swords -->
+  <g transform="translate(256,256)">
+    <!-- Left sword -->
+    <g transform="rotate(-45)">
+      <!-- Blade -->
+      <rect x="-8" y="-120" width="16" height="180" fill="#c0c0c0"/>
+      <path d="M-8,-120 L0,-130 L8,-120 Z" fill="#c0c0c0"/>
+
+      <!-- Hilt -->
+      <rect x="-30" y="60" width="60" height="10" fill="#8b7355"/>
+      <rect x="-5" y="50" width="10" height="30" fill="#8b7355"/>
+
+      <!-- Pommel -->
+      <circle cx="0" cy="75" r="12" fill="#d4af37"/>
+      <circle cx="0" cy="75" r="6" fill="#c41e3a"/>
+    </g>
+
+    <!-- Right sword -->
+    <g transform="rotate(45)">
+      <!-- Blade -->
+      <rect x="-8" y="-120" width="16" height="180" fill="#c0c0c0"/>
+      <path d="M-8,-120 L0,-130 L8,-120 Z" fill="#c0c0c0"/>
+
+      <!-- Hilt -->
+      <rect x="-30" y="60" width="60" height="10" fill="#8b7355"/>
+      <rect x="-5" y="50" width="10" height="30" fill="#8b7355"/>
+
+      <!-- Pommel -->
+      <circle cx="0" cy="75" r="12" fill="#d4af37"/>
+      <circle cx="0" cy="75" r="6" fill="#c41e3a"/>
+    </g>
+
+    <!-- Center emblem -->
+    <circle cx="0" cy="0" r="25" fill="#1a1a2e"/>
+    <circle cx="0" cy="0" r="20" fill="#d4af37"/>
+    <circle cx="0" cy="0" r="12" fill="#c41e3a"/>
+  </g>
+</svg>

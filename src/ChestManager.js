@@ -8,12 +8,17 @@ import { LootGenerator } from './LootGenerator.js';
 import { POIType } from './DungeonGenerator.js';
 
 export class ChestManager {
-    constructor(scene, dungeonData, itemManager, audioManager = null) {
+    constructor(scene, dungeonData, itemManager, audioManager = null, config = {}) {
         this.scene = scene;
         this.dungeonData = dungeonData;
         this.itemManager = itemManager;
         this.audioManager = audioManager;
         this.lootGenerator = new LootGenerator(itemManager);
+
+        this.config = {
+            cellSize: config.cellSize || 4,
+            ...config
+        };
 
         this.chests = [];
         this.interactionRange = 2.5;
@@ -23,7 +28,7 @@ export class ChestManager {
      * Place chests throughout the dungeon based on room types
      */
     placeChests() {
-        const cellSize = 4; // Assuming 4 units per grid cell
+        const cellSize = this.config.cellSize;
 
         // Place chests in treasure rooms
         const treasureRooms = this.dungeonData.rooms.filter(room => room.type === POIType.TREASURE);
@@ -124,7 +129,7 @@ export class ChestManager {
      * Place locked chests in strategic locations
      */
     placeLockedChests() {
-        const cellSize = 4;
+        const cellSize = this.config.cellSize;
         const lockedChestCount = 3;
 
         // Place in hub rooms (high-value loot)

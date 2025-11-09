@@ -198,7 +198,6 @@ export class Inventory {
     while (quantity > 0) {
       const emptySlot = this.slots.findIndex(slot => slot === null);
       if (emptySlot === -1) {
-        console.log('Inventory is full!');
         return false;
       }
 
@@ -285,7 +284,6 @@ export class Inventory {
 
     // Check if item can be equipped in this slot
     if (equipSlot === 'weapon' && item.type !== 'weapon') {
-      console.log('Cannot equip non-weapon in weapon slot');
       return false;
     }
 

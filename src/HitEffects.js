@@ -1,6 +1,14 @@
 import * as THREE from 'three';
 
+/**
+ * HitEffects - Manages visual effects for combat hits
+ * Handles particle effects and screen shake
+ */
 export class HitEffects {
+  /**
+   * Create a new HitEffects instance
+   * @param {THREE.Scene} scene - The Three.js scene
+   */
   constructor(scene) {
     this.scene = scene;
     this.particles = [];
@@ -13,7 +21,11 @@ export class HitEffects {
     };
   }
 
-  // Create particle burst at hit location
+  /**
+   * Create particle burst at hit location
+   * @param {THREE.Vector3} position - World position for particles
+   * @param {number} color - Hex color for particles (default: 0xff0000)
+   */
   createHitParticles(position, color = 0xff0000) {
     const particleCount = 12;
     const particleGeometry = new THREE.SphereGeometry(0.05, 4, 4);
@@ -46,7 +58,11 @@ export class HitEffects {
     }
   }
 
-  // Trigger screen shake effect
+  /**
+   * Trigger screen shake effect
+   * @param {number} intensity - Shake intensity (default: 0.1)
+   * @param {number} duration - Shake duration in seconds (default: 0.15)
+   */
   triggerScreenShake(intensity = 0.1, duration = 0.15) {
     this.screenShake.active = true;
     this.screenShake.intensity = intensity;
@@ -54,7 +70,11 @@ export class HitEffects {
     this.screenShake.elapsed = 0;
   }
 
-  // Update particles and effects
+  /**
+   * Update particles and screen shake effects
+   * @param {number} deltaTime - Time elapsed since last update in seconds
+   * @param {THREE.Camera} camera - Camera object (currently unused but kept for compatibility)
+   */
   update(deltaTime, camera) {
     // Update particles
     for (let i = this.particles.length - 1; i >= 0; i--) {
@@ -106,12 +126,17 @@ export class HitEffects {
     }
   }
 
-  // Get current shake offset for camera
+  /**
+   * Get current shake offset for camera
+   * @returns {THREE.Vector3} Current shake offset vector
+   */
   getShakeOffset() {
     return this.screenShake.offset;
   }
 
-  // Clear all effects
+  /**
+   * Clear all effects and cleanup resources
+   */
   clear() {
     // Remove all particles
     for (const particle of this.particles) {

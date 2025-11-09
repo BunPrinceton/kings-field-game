@@ -61,7 +61,6 @@ export class Item {
    * Use the item (override in subclasses)
    */
   use(user) {
-    console.log(`${user.name || 'Player'} used ${this.name}`);
     return false; // Return true if item was consumed
   }
 

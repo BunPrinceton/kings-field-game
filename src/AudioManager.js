@@ -55,7 +55,6 @@ export class AudioManager {
 
         this.audioContext = this.listener.context;
         this.initialized = true;
-        console.log('AudioManager initialized');
         return true;
     }
 

@@ -5,6 +5,14 @@ import * as THREE from 'three';
  * Shows explored areas, player position, and enemies
  */
 export class MinimapRenderer {
+  /**
+   * Create a new MinimapRenderer
+   * @param {Object} dungeonData - Dungeon data object with grid and rooms
+   * @param {Object} options - Configuration options
+   * @param {number} options.size - Canvas size in pixels (default: 180)
+   * @param {number} options.scale - Pixels per grid unit (default: 3)
+   * @param {boolean} options.fogOfWar - Enable fog of war (default: true)
+   */
   constructor(dungeonData, options = {}) {
     this.dungeonData = dungeonData;
     this.options = {
@@ -54,6 +62,9 @@ export class MinimapRenderer {
 
   /**
    * Update fog of war based on player position
+   * @param {number} playerGridX - Player X position in grid coordinates
+   * @param {number} playerGridZ - Player Z position in grid coordinates
+   * @param {number} viewRadius - View radius in grid units (default: 4)
    */
   updateFogOfWar(playerGridX, playerGridZ, viewRadius = 4) {
     // Mark cells in a radius around the player as explored
@@ -72,6 +83,9 @@ export class MinimapRenderer {
 
   /**
    * Check if a cell has been explored
+   * @param {number} gridX - Cell X position in grid coordinates
+   * @param {number} gridZ - Cell Z position in grid coordinates
+   * @returns {boolean} True if cell has been explored
    */
   isCellExplored(gridX, gridZ) {
     if (!this.options.fogOfWar) return true;
@@ -81,6 +95,9 @@ export class MinimapRenderer {
 
   /**
    * Render the minimap
+   * @param {THREE.Vector3|Object} playerPos - Player position with x, y, z coordinates
+   * @param {Object} playerRotation - Player rotation (currently unused)
+   * @param {Array} enemies - Array of enemy objects to display on minimap
    */
   render(playerPos, playerRotation, enemies = []) {
     const ctx = this.ctx;
@@ -172,7 +189,7 @@ export class MinimapRenderer {
     if (enemies && enemies.length > 0) {
       ctx.fillStyle = '#c75450';
       enemies.forEach(enemy => {
-        if (enemy.isDead && enemy.isDead()) return;
+        if (!enemy || !enemy.mesh || (enemy.isDead && enemy.isDead())) return;
 
         const enemyGridX = Math.round(enemy.mesh.position.x / 4);
         const enemyGridZ = Math.round(enemy.mesh.position.z / 4);

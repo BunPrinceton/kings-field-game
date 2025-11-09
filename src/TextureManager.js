@@ -275,8 +275,6 @@ export class TextureManager {
      * @returns {Promise<void>}
      */
     async preloadCommonTextures() {
-        console.log('Preloading common textures...');
-
         const preloadTasks = [
             this.createWallMaterial(),
             this.createFloorMaterial(),
@@ -287,7 +285,6 @@ export class TextureManager {
 
         try {
             await Promise.all(preloadTasks);
-            console.log('Texture preload complete');
         } catch (error) {
             console.warn('Some textures failed to preload:', error);
         }

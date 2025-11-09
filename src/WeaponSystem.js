@@ -1,6 +1,10 @@
 import * as THREE from 'three';
 import { Sword } from './Sword.js';
 
+// Attack hit timing constants
+const HIT_TIMING_MIN = 0.4; // Hit occurs at 40% through animation
+const HIT_TIMING_MAX = 0.6; // Hit ends at 60% through animation
+
 // Weapon types with their stats (kept for backward compatibility with axes, maces, daggers)
 const WEAPON_STATS = {
   sword: {
@@ -430,7 +434,7 @@ export class WeaponSystem {
 
   // Get attack hit timing (when damage should be applied)
   getAttackHitTiming() {
-    // Hit occurs at 40-60% through the animation
-    return this.attackProgress >= 0.4 && this.attackProgress <= 0.6;
+    // Hit occurs at HIT_TIMING_MIN-HIT_TIMING_MAX% through the animation
+    return this.attackProgress >= HIT_TIMING_MIN && this.attackProgress <= HIT_TIMING_MAX;
   }
 }

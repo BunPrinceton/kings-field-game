@@ -24,26 +24,49 @@ import { StairManager } from './StairManager.js';
 import { InstanceManager } from './instances/InstanceManager.js';
 import { PortalManager } from './instances/InstancePortal.js';
 
-// Health system class
+/**
+ * Health system class - manages health for entities
+ */
 class Health {
+    /**
+     * Create a new Health instance
+     * @param {number} maxHealth - Maximum health value
+     */
     constructor(maxHealth) {
         this.max = maxHealth;
         this.current = maxHealth;
     }
 
+    /**
+     * Apply damage to the entity
+     * @param {number} amount - Amount of damage to apply
+     * @returns {boolean} True if entity is dead after damage
+     */
     takeDamage(amount) {
         this.current = Math.max(0, this.current - amount);
         return this.current <= 0;
     }
 
+    /**
+     * Heal the entity
+     * @param {number} amount - Amount of health to restore
+     */
     heal(amount) {
         this.current = Math.min(this.max, this.current + amount);
     }
 
+    /**
+     * Get current health as a percentage
+     * @returns {number} Health percentage (0-100)
+     */
     getPercentage() {
         return (this.current / this.max) * 100;
     }
 
+    /**
+     * Check if entity is dead
+     * @returns {boolean} True if current health is 0 or less
+     */
     isDead() {
         return this.current <= 0;
     }
@@ -55,8 +78,14 @@ const ATTACK_COOLDOWN_MS = 500;
 const FOOTSTEP_SPRINT_INTERVAL = 300;
 const FOOTSTEP_WALK_INTERVAL = 450;
 
-// Player class
+/**
+ * Player class - manages player state, combat, and armor
+ */
 class Player {
+    /**
+     * Create a new Player
+     * @param {THREE.Scene} scene - The Three.js scene
+     */
     constructor(scene) {
         this.scene = scene;
         this.health = new Health(100);
@@ -72,8 +101,19 @@ class Player {
         this.armorSystem = new ArmorSystem(scene);
     }
 
+    /**
+     * Attempt to attack enemies in range
+     * @param {Array} enemies - Array of enemy objects
+     * @param {Object} weaponStats - Weapon statistics object
+     * @returns {Object|null} The closest enemy in range, or null
+     */
     attack(enemies, weaponStats) {
         if (this.isAttacking || this.attackCooldown > 0) {
+            return null;
+        }
+
+        // Validate enemies array
+        if (!enemies || !Array.isArray(enemies) || enemies.length === 0) {
             return null;
         }
 
@@ -108,6 +148,12 @@ class Player {
         return closestEnemy;
     }
 
+    /**
+     * Apply damage to the player, accounting for armor
+     * @param {number} amount - Amount of damage to apply
+     * @param {string} damageType - Type of damage (physical, magical, etc.)
+     * @returns {Object} Object with isDead, damageDealt, blocked, damageReduced
+     */
     takeDamage(amount, damageType = 'physical') {
         // Calculate damage after armor reduction
         const damageResult = this.armorSystem.calculateDamageReduction(amount, damageType);
@@ -129,16 +175,28 @@ class Player {
         };
     }
 
+    /**
+     * Get current movement speed modified by armor
+     * @returns {number} Movement speed modifier
+     */
     getMovementSpeed() {
         // Get base movement speed modified by armor
         return this.armorSystem.speedModifier;
     }
 
+    /**
+     * Get stamina drain modifier from armor
+     * @returns {number} Stamina modifier
+     */
     getStaminaModifier() {
         // Get stamina drain modifier from armor
         return this.armorSystem.staminaModifier;
     }
 
+    /**
+     * Update player state
+     * @param {number} deltaTime - Time elapsed since last update in milliseconds
+     */
     update(deltaTime) {
         if (this.attackCooldown > 0) {
             this.attackCooldown = Math.max(0, this.attackCooldown - deltaTime);
@@ -1174,7 +1232,7 @@ function updateMovement(deltaTime) {
         const footstepInterval = game.movement.isSprinting ? FOOTSTEP_SPRINT_INTERVAL : FOOTSTEP_WALK_INTERVAL;
 
         if (game.time * 1000 - game.lastFootstepTime > footstepInterval) {
-            const numVariations = SOUND_CONFIG.footsteps.stone.files.length;
+            const numVariations = SOUND_CONFIG?.footsteps?.stone?.files?.length || 1;
             game.audio.playRandomVariation('footsteps', 'stone', numVariations, 150);
             game.lastFootstepTime = game.time * 1000;
         }
@@ -1307,22 +1365,6 @@ async function init() {
 
     console.log('Collision system initialized with', game.collidableObjects.length, 'objects');
 
-    // Place decorations - DISABLED to prevent WebGL texture limit errors
-    // TODO: Re-enable with texture-less materials or reduce decoration count
-    /*
-    game.dungeon.decorations = new DecorationsManager(
-        game.scene,
-        game.dungeon.data,
-        game.dungeon.builder.textureManager,
-        {
-            cellSize: 4,
-            wallHeight: 3.5,
-            decorationDensity: 0.3
-        }
-    );
-    await game.dungeon.decorations.placeDecorations();
-    */
-
     // Place furniture in rooms
     game.dungeon.furniture = new FurnitureDecorator(
         game.scene,
@@ -1339,22 +1381,6 @@ async function init() {
 
     // Register furniture for collision detection
     registerFurnitureCollision();
-
-    // Add atmospheric details - DISABLED to prevent WebGL texture limit errors
-    // TODO: Re-enable with simpler materials
-    /*
-    game.dungeon.atmosphericDetails = new AtmosphericDetails(
-        game.scene,
-        game.dungeon.data,
-        {
-            cellSize: 4,
-            wallHeight: 3.5,
-            detailDensity: 0.2
-        }
-    );
-    game.dungeon.atmosphericDetails.addDetails();
-    game.dungeon.atmosphericDetails.addDustParticles();
-    */
 
     // Initialize Home Decor System - creates unique atmospheric rooms
     console.log('Initializing Home Decor System...');
@@ -1838,7 +1864,7 @@ function update(deltaTime) {
 
         // Play sword swing sound
         if (game.audioInitialized) {
-            const swingVariations = SOUND_CONFIG.combat.sword_swing.files.length;
+            const swingVariations = SOUND_CONFIG?.combat?.sword_swing?.files?.length || 1;
             game.audio.playRandomVariation('combat', 'sword_swing', swingVariations, 100);
         }
 
@@ -1883,7 +1909,7 @@ function update(deltaTime) {
 
             // Play hit sound
             if (game.audioInitialized) {
-                const hitVariations = SOUND_CONFIG.combat.sword_hit.files.length;
+                const hitVariations = SOUND_CONFIG?.combat?.sword_hit?.files?.length || 1;
                 game.audio.playRandomVariation('combat', 'sword_hit', hitVariations, 50);
             }
 
@@ -1893,7 +1919,7 @@ function update(deltaTime) {
                 console.log('Enemy defeated!');
                 // Play death sound
                 if (game.audioInitialized) {
-                    const deathVariations = SOUND_CONFIG.combat.enemy_death.files.length;
+                    const deathVariations = SOUND_CONFIG?.combat?.enemy_death?.files?.length || 1;
                     game.audio.playRandomVariation('combat', 'enemy_death', deathVariations, 100);
                 }
             }

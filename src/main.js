@@ -270,7 +270,15 @@ const game = {
         sprintMultiplier: 1.8,
         friction: 0.85, // Deceleration when no input
         isSprinting: false,
-        isMoving: false // Track if player is currently moving
+        isMoving: false, // Track if player is currently moving
+        // Dash ability
+        isDashing: false,
+        dashSpeed: 12, // Much faster than sprint
+        dashDuration: 0.25, // 250ms dash
+        dashCooldown: 1.0, // 1 second cooldown
+        dashTimer: 0,
+        dashCooldownTimer: 0,
+        lastShiftPress: 0 // For double-tap detection
     },
     // Mouse look state
     mouse: {
@@ -580,6 +588,95 @@ async function transitionToLevel(targetLevel, direction = 'down') {
     }, 500);
 }
 
+// Register furniture objects for collision detection
+function registerFurnitureCollision() {
+    if (!game.dungeon.furniture) return;
+
+    const furnitureManager = game.dungeon.furniture.getFurnitureManager();
+    if (!furnitureManager || !furnitureManager.furniture) return;
+
+    let addedCount = 0;
+
+    for (const furnitureObj of furnitureManager.furniture) {
+        // Add furniture meshes to collision system
+        // Skip non-solid furniture (chandeliers, wall decorations, etc.)
+        const nonSolidTypes = ['chandelier', 'candelabra', 'wall_torch', 'banner'];
+        const furnitureType = furnitureObj.userData?.furnitureType;
+
+        if (nonSolidTypes.includes(furnitureType)) {
+            continue; // Skip non-solid objects
+        }
+
+        // Add to collidable objects
+        if (!game.collidableObjects.includes(furnitureObj)) {
+            // Set grid position for collision system
+            const gridX = Math.round(furnitureObj.position.x / 4);
+            const gridZ = Math.round(furnitureObj.position.z / 4);
+            furnitureObj.userData.gridPos = { x: gridX, z: gridZ };
+
+            // Add collision radius based on furniture type
+            furnitureObj.userData.collisionRadius = 0.5; // Default radius
+
+            game.collidableObjects.push(furnitureObj);
+            addedCount++;
+        }
+    }
+
+    console.log(`✓ Registered ${addedCount} furniture objects for collision`);
+}
+
+// Register chest and trap objects for collision
+function registerChestAndTrapCollision() {
+    let addedCount = 0;
+
+    // Register chests
+    if (game.chestManager && game.chestManager.chests) {
+        for (const chest of game.chestManager.chests) {
+            if (chest.mesh && !game.collidableObjects.includes(chest.mesh)) {
+                const gridX = Math.round(chest.mesh.position.x / 4);
+                const gridZ = Math.round(chest.mesh.position.z / 4);
+                chest.mesh.userData.gridPos = { x: gridX, z: gridZ };
+                chest.mesh.userData.collisionRadius = 0.4;
+
+                game.collidableObjects.push(chest.mesh);
+                addedCount++;
+            }
+        }
+    }
+
+    // Note: Traps should NOT have collision - player should walk over them
+    // They trigger damage but don't block movement
+
+    console.log(`✓ Registered ${addedCount} chests for collision`);
+}
+
+// Register decoration objects for collision (if solid)
+function registerDecorationCollision() {
+    if (!game.dungeon.homeDecor || !game.dungeon.homeDecor.decorations) return;
+
+    let addedCount = 0;
+
+    for (const decoration of game.dungeon.homeDecor.decorations) {
+        // Only add solid decorations (not candles, flames, etc.)
+        const solidTypes = ['bookshelf', 'throne', 'table', 'altar', 'chest', 'barrel', 'crate', 'pedestal'];
+        const decorType = decoration.userData?.decorationType;
+
+        if (solidTypes.some(type => decorType?.includes(type))) {
+            if (!game.collidableObjects.includes(decoration)) {
+                const gridX = Math.round(decoration.position.x / 4);
+                const gridZ = Math.round(decoration.position.z / 4);
+                decoration.userData.gridPos = { x: gridX, z: gridZ };
+                decoration.userData.collisionRadius = 0.5;
+
+                game.collidableObjects.push(decoration);
+                addedCount++;
+            }
+        }
+    }
+
+    console.log(`✓ Registered ${addedCount} decorations for collision`);
+}
+
 // Clear current level
 function clearCurrentLevel() {
     // Remove all dungeon meshes
@@ -756,8 +853,26 @@ function setupInput() {
             tryInteractWithPortal();
         }
 
-        // Handle sprint (Shift)
+        // Handle sprint and dash (Shift double-tap to dash)
         if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+            const now = Date.now();
+            const timeSinceLastPress = now - game.movement.lastShiftPress;
+
+            // Double-tap detection (within 300ms)
+            if (timeSinceLastPress < 300 && game.movement.dashCooldownTimer <= 0) {
+                // Trigger dash!
+                game.movement.isDashing = true;
+                game.movement.dashTimer = game.movement.dashDuration;
+                game.movement.dashCooldownTimer = game.movement.dashCooldown;
+                console.log('Dash activated!');
+
+                // Play dash sound if audio available
+                if (game.audioInitialized && game.audio) {
+                    game.audio.play('dash', 'sfx', game.player.position);
+                }
+            }
+
+            game.movement.lastShiftPress = now;
             game.movement.isSprinting = true;
         }
 
@@ -908,23 +1023,33 @@ function setupInput() {
 }
 
 // Check if a position has a collision (radius-based for smooth movement)
-function checkCollision(x, z, radius = 0.3) {
+function checkCollision(x, z, playerRadius = 0.3) {
     // Check against collidable objects
     for (const obj of game.collidableObjects) {
         const objGridPos = obj.userData.gridPos;
-        if (objGridPos) {
-            // Convert grid position to world position (assuming 4 units per cell)
-            const objX = objGridPos.x * 4;
-            const objZ = objGridPos.z * 4;
+        if (!objGridPos) continue;
 
-            // Simple distance check with object radius (walls are about 2 units wide)
-            const dx = x - objX;
-            const dz = z - objZ;
-            const distance = Math.sqrt(dx * dx + dz * dz);
+        // Use actual object position (more accurate than grid position)
+        const objX = obj.position.x;
+        const objZ = obj.position.z;
 
-            if (distance < radius + 1.5) { // 1.5 is approx wall radius
-                return true;
-            }
+        // Get object-specific collision radius (or default)
+        let objectRadius = obj.userData.collisionRadius || 1.5; // Default for walls
+
+        // If it's a wall-type object (no specific radius), use larger radius
+        if (!obj.userData.collisionRadius && obj.geometry instanceof THREE.BoxGeometry) {
+            // Walls are typically BoxGeometry
+            objectRadius = 1.5;
+        }
+
+        // Calculate distance between player and object
+        const dx = x - objX;
+        const dz = z - objZ;
+        const distance = Math.sqrt(dx * dx + dz * dz);
+
+        // Check collision with combined radii
+        if (distance < playerRadius + objectRadius) {
+            return true;
         }
     }
     return false;
@@ -932,6 +1057,17 @@ function checkCollision(x, z, radius = 0.3) {
 
 // Process continuous movement based on key states
 function updateMovement(deltaTime) {
+    // Update dash timers
+    if (game.movement.dashTimer > 0) {
+        game.movement.dashTimer -= deltaTime;
+        if (game.movement.dashTimer <= 0) {
+            game.movement.isDashing = false;
+        }
+    }
+    if (game.movement.dashCooldownTimer > 0) {
+        game.movement.dashCooldownTimer -= deltaTime;
+    }
+
     // Calculate movement direction from key inputs
     let moveX = 0;
     let moveZ = 0;
@@ -963,15 +1099,27 @@ function updateMovement(deltaTime) {
     const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
     const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
 
-    // Calculate desired velocity based on input
-    const speed = game.movement.speed * (game.movement.isSprinting ? game.movement.sprintMultiplier : 1);
+    // Calculate desired velocity based on input (or dash)
+    let speed;
+    if (game.movement.isDashing) {
+        // During dash, use dash speed
+        speed = game.movement.dashSpeed;
+    } else {
+        // Normal movement
+        speed = game.movement.speed * (game.movement.isSprinting ? game.movement.sprintMultiplier : 1);
+    }
+
     const targetVelocity = new THREE.Vector3();
     targetVelocity.addScaledVector(forward, moveZ);
     targetVelocity.addScaledVector(right, moveX);
     targetVelocity.multiplyScalar(speed);
 
     // Apply acceleration/deceleration
-    if (moveX !== 0 || moveZ !== 0) {
+    if (game.movement.isDashing) {
+        // Instant velocity during dash
+        game.movement.velocity.x = targetVelocity.x;
+        game.movement.velocity.z = targetVelocity.z;
+    } else if (moveX !== 0 || moveZ !== 0) {
         // Accelerate towards target
         game.movement.velocity.x = THREE.MathUtils.lerp(game.movement.velocity.x, targetVelocity.x, 0.15);
         game.movement.velocity.z = THREE.MathUtils.lerp(game.movement.velocity.z, targetVelocity.z, 0.15);
@@ -1189,6 +1337,9 @@ async function init() {
     game.dungeon.furniture.addDoorsToCorridors();
     console.log('✓ Furniture placement complete');
 
+    // Register furniture for collision detection
+    registerFurnitureCollision();
+
     // Add atmospheric details - DISABLED to prevent WebGL texture limit errors
     // TODO: Re-enable with simpler materials
     /*
@@ -1220,6 +1371,9 @@ async function init() {
     await game.dungeon.homeDecor.decorateAllRooms();
     console.log('Home Decor System initialized successfully');
 
+    // Register decorations for collision
+    registerDecorationCollision();
+
     // Initialize Chest Manager
     console.log('Initializing Chest Manager...');
     game.chestManager = new ChestManager(game.scene, game.dungeon.data, game.itemManager, game.audio);
@@ -1231,6 +1385,9 @@ async function init() {
     game.trapManager = new TrapManager(game.scene, game.dungeon.data, game.audio);
     game.trapManager.placeTraps();
     console.log('Trap Manager initialized:', game.trapManager.getStats());
+
+    // Register chests for collision (traps are walkable)
+    registerChestAndTrapCollision();
 
     // Initialize Instance Manager
     console.log('Initializing Instance Manager...');
@@ -1555,7 +1712,12 @@ function updateUI() {
                 Mouse Look: ${mouseLockStatus}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | SHIFT: Sprint | SPACE: Attack | E: Interact
+                WASD: Move | SHIFT: Sprint | SHIFT x2: Dash | SPACE: Attack | E: Interact
+            </div>
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                Dash: ${game.movement.dashCooldownTimer > 0 ?
+                    `<span style="color: #ff0">${game.movement.dashCooldownTimer.toFixed(1)}s</span>` :
+                    '<span style="color: #0f0">READY</span>'}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
                 1-4: Weapons | 5-9: Swords | F1-F4: Armor | F5-F8: Helmets | F9-F12: Shields

@@ -173,16 +173,22 @@ const game = {
     player: null, // Will be Player class instance
     weaponSystem: null, // Weapon system instance
     hitEffects: null, // Hit effects system
-    gridSize: 1, // Size of each grid cell
+    gridSize: 1, // Size of each grid cell (kept for compatibility with dungeon system)
+    // Real-time movement state
     movement: {
-        isMoving: false,
-        isRotating: false,
-        startPos: { x: 0, z: 5 },
-        targetPos: { x: 0, z: 5 },
-        startRot: 0,
-        targetRot: 0,
-        progress: 0,
-        duration: 0.3 // seconds
+        velocity: { x: 0, y: 0, z: 0 }, // Current velocity
+        speed: 3.5, // Units per second
+        sprintMultiplier: 1.8,
+        friction: 0.85, // Deceleration when no input
+        isSprinting: false
+    },
+    // Mouse look state
+    mouse: {
+        sensitivity: 0.002,
+        pitch: 0, // Up/down rotation (clamped)
+        yaw: 0, // Left/right rotation
+        pitchLimit: Math.PI / 3, // 60 degrees up/down
+        isLocked: false
     },
     collidableObjects: [], // Objects that block movement
     keys: {}, // Track key states
@@ -295,6 +301,49 @@ function startAmbience() {
     setTimeout(() => game.audio.fadeIn('ambience', 'wind_echo', 5000), 4000);
 }
 
+// Setup pointer lock for mouse look
+function setupPointerLock() {
+    const canvas = game.renderer.domElement;
+
+    // Request pointer lock on click
+    canvas.addEventListener('click', () => {
+        if (!game.mouse.isLocked) {
+            canvas.requestPointerLock();
+        }
+    });
+
+    // Handle pointer lock changes
+    document.addEventListener('pointerlockchange', () => {
+        game.mouse.isLocked = document.pointerLockElement === canvas;
+        if (game.mouse.isLocked) {
+            console.log('Mouse look enabled');
+        } else {
+            console.log('Mouse look disabled');
+        }
+    });
+
+    // Handle mouse movement for camera look
+    document.addEventListener('mousemove', (e) => {
+        if (!game.mouse.isLocked) return;
+
+        // Update yaw (left/right)
+        game.mouse.yaw -= e.movementX * game.mouse.sensitivity;
+
+        // Update pitch (up/down) with clamping
+        game.mouse.pitch -= e.movementY * game.mouse.sensitivity;
+        game.mouse.pitch = Math.max(-game.mouse.pitchLimit, Math.min(game.mouse.pitchLimit, game.mouse.pitch));
+
+        // Apply rotation to camera
+        game.camera.rotation.order = 'YXZ'; // Prevents gimbal lock
+        game.camera.rotation.y = game.mouse.yaw;
+        game.camera.rotation.x = game.mouse.pitch;
+
+        // Update player rotation (for collision and attack direction)
+        game.player.rotation.y = game.mouse.yaw;
+        game.player.rotation.x = game.mouse.pitch;
+    });
+}
+
 // Input handling
 function setupInput() {
     window.addEventListener('keydown', (e) => {
@@ -307,6 +356,11 @@ function setupInput() {
         if (e.code === 'Space') {
             e.preventDefault();
             game.input.attack = true;
+        }
+
+        // Handle sprint (Shift)
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+            game.movement.isSprinting = true;
         }
 
         // Handle weapon switching (1-4 keys)
@@ -324,10 +378,8 @@ function setupInput() {
             }
         }
 
-        // Handle movement
-        if (game.keys[e.key.toLowerCase()]) return; // Already pressed
+        // Track key states
         game.keys[e.key.toLowerCase()] = true;
-        handleInput(e.key.toLowerCase());
     });
 
     window.addEventListener('keyup', (e) => {
@@ -337,9 +389,17 @@ function setupInput() {
             game.input.attack = false;
         }
 
-        // Handle movement release
+        // Handle sprint release
+        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+            game.movement.isSprinting = false;
+        }
+
+        // Track key states
         game.keys[e.key.toLowerCase()] = false;
     });
+
+    // Setup pointer lock
+    setupPointerLock();
 
     // Also try to init audio on click
     window.addEventListener('click', () => {
@@ -349,149 +409,127 @@ function setupInput() {
     }, { once: true });
 }
 
-function handleInput(key) {
-    // Don't accept input if already moving or rotating
-    if (game.movement.isMoving || game.movement.isRotating) return;
-
-    const moveMap = {
-        'w': 'forward',
-        'arrowup': 'forward',
-        's': 'backward',
-        'arrowdown': 'backward',
-        'a': 'left',
-        'arrowleft': 'left',
-        'd': 'right',
-        'arrowright': 'right',
-        'q': 'rotateLeft',
-        'e': 'rotateRight'
-    };
-
-    const action = moveMap[key];
-    if (!action) return;
-
-    if (action === 'rotateLeft' || action === 'rotateRight') {
-        rotate(action === 'rotateLeft' ? -1 : 1);
-    } else {
-        move(action);
-    }
-}
-
-// Check if a grid position has a collision
-function checkCollision(gridX, gridZ) {
+// Check if a position has a collision (radius-based for smooth movement)
+function checkCollision(x, z, radius = 0.3) {
+    // Check against collidable objects
     for (const obj of game.collidableObjects) {
         const objGridPos = obj.userData.gridPos;
-        if (objGridPos && objGridPos.x === gridX && objGridPos.z === gridZ) {
-            return true;
+        if (objGridPos) {
+            // Convert grid position to world position (assuming 4 units per cell)
+            const objX = objGridPos.x * 4;
+            const objZ = objGridPos.z * 4;
+
+            // Simple distance check with object radius (walls are about 2 units wide)
+            const dx = x - objX;
+            const dz = z - objZ;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+
+            if (distance < radius + 1.5) { // 1.5 is approx wall radius
+                return true;
+            }
         }
     }
     return false;
 }
 
-// Calculate movement direction based on current rotation and move direction
-function getMovementVector(direction) {
-    const angle = game.player.rotation.y;
-    const vectors = {
-        forward: { x: -Math.sin(angle), z: -Math.cos(angle) },
-        backward: { x: Math.sin(angle), z: Math.cos(angle) },
-        left: { x: -Math.sin(angle - Math.PI / 2), z: -Math.cos(angle - Math.PI / 2) },
-        right: { x: -Math.sin(angle + Math.PI / 2), z: -Math.cos(angle + Math.PI / 2) }
-    };
-
-    const vec = vectors[direction];
-    return {
-        x: Math.round(vec.x),
-        z: Math.round(vec.z)
-    };
-}
-
-// Initiate movement
-function move(direction) {
-    const moveVec = getMovementVector(direction);
-    const currentGridX = Math.round(game.player.position.x / game.gridSize);
-    const currentGridZ = Math.round(game.player.position.z / game.gridSize);
-
-    const targetGridX = currentGridX + moveVec.x;
-    const targetGridZ = currentGridZ + moveVec.z;
-
-    // Check collision
-    if (checkCollision(targetGridX, targetGridZ)) {
-        console.log('Collision detected!');
-        return;
-    }
-
-    // Start movement animation
-    game.movement.isMoving = true;
-    game.movement.progress = 0;
-    game.movement.startPos.x = game.player.position.x;
-    game.movement.startPos.z = game.player.position.z;
-    game.movement.targetPos.x = targetGridX * game.gridSize;
-    game.movement.targetPos.z = targetGridZ * game.gridSize;
-
-    // Play footstep sound
-    if (game.audioInitialized) {
-        const numVariations = SOUND_CONFIG.footsteps.stone.files.length;
-        game.audio.playRandomVariation('footsteps', 'stone', numVariations, 150);
-    }
-}
-
-// Initiate rotation
-function rotate(direction) {
-    game.movement.isRotating = true;
-    game.movement.progress = 0;
-    game.movement.startRot = game.player.rotation.y;
-    game.movement.targetRot = game.player.rotation.y + (direction * Math.PI / 2);
-}
-
-// Easing function for smooth movement
-function easeInOutCubic(t) {
-    return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
-}
-
-// Update movement animation
+// Process continuous movement based on key states
 function updateMovement(deltaTime) {
-    if (!game.movement.isMoving && !game.movement.isRotating) return;
+    // Calculate movement direction from key inputs
+    let moveX = 0;
+    let moveZ = 0;
 
-    game.movement.progress += deltaTime / game.movement.duration;
-
-    if (game.movement.progress >= 1) {
-        game.movement.progress = 1;
+    if (game.keys['w'] || game.keys['arrowup']) {
+        moveZ -= 1;
+    }
+    if (game.keys['s'] || game.keys['arrowdown']) {
+        moveZ += 1;
+    }
+    if (game.keys['a'] || game.keys['arrowleft']) {
+        moveX -= 1;
+    }
+    if (game.keys['d'] || game.keys['arrowright']) {
+        moveX += 1;
     }
 
-    const easedProgress = easeInOutCubic(game.movement.progress);
-
-    // Update position
-    if (game.movement.isMoving) {
-        game.player.position.x = THREE.MathUtils.lerp(
-            game.movement.startPos.x,
-            game.movement.targetPos.x,
-            easedProgress
-        );
-        game.player.position.z = THREE.MathUtils.lerp(
-            game.movement.startPos.z,
-            game.movement.targetPos.z,
-            easedProgress
-        );
+    // Normalize diagonal movement
+    if (moveX !== 0 || moveZ !== 0) {
+        const length = Math.sqrt(moveX * moveX + moveZ * moveZ);
+        moveX /= length;
+        moveZ /= length;
     }
 
-    // Update rotation
-    if (game.movement.isRotating) {
-        game.player.rotation.y = THREE.MathUtils.lerp(
-            game.movement.startRot,
-            game.movement.targetRot,
-            easedProgress
-        );
+    // Get camera direction (yaw only, no pitch for movement)
+    const yaw = game.player.rotation.y;
+    const forward = new THREE.Vector3(-Math.sin(yaw), 0, -Math.cos(yaw));
+    const right = new THREE.Vector3(Math.cos(yaw), 0, -Math.sin(yaw));
+
+    // Calculate desired velocity based on input
+    const speed = game.movement.speed * (game.movement.isSprinting ? game.movement.sprintMultiplier : 1);
+    const targetVelocity = new THREE.Vector3();
+    targetVelocity.addScaledVector(forward, moveZ);
+    targetVelocity.addScaledVector(right, moveX);
+    targetVelocity.multiplyScalar(speed);
+
+    // Apply acceleration/deceleration
+    if (moveX !== 0 || moveZ !== 0) {
+        // Accelerate towards target
+        game.movement.velocity.x = THREE.MathUtils.lerp(game.movement.velocity.x, targetVelocity.x, 0.15);
+        game.movement.velocity.z = THREE.MathUtils.lerp(game.movement.velocity.z, targetVelocity.z, 0.15);
+    } else {
+        // Apply friction when no input
+        game.movement.velocity.x *= game.movement.friction;
+        game.movement.velocity.z *= game.movement.friction;
     }
 
-    // Update camera
+    // Calculate next position
+    const nextX = game.player.position.x + game.movement.velocity.x * deltaTime;
+    const nextZ = game.player.position.z + game.movement.velocity.z * deltaTime;
+
+    // Collision detection and sliding
+    let finalX = nextX;
+    let finalZ = nextZ;
+
+    // Try moving in both axes
+    if (!checkCollision(nextX, nextZ)) {
+        finalX = nextX;
+        finalZ = nextZ;
+    } else {
+        // Try sliding along walls by testing each axis separately
+        if (!checkCollision(nextX, game.player.position.z)) {
+            finalX = nextX;
+            finalZ = game.player.position.z;
+            game.movement.velocity.z = 0; // Stop Z velocity on collision
+        } else if (!checkCollision(game.player.position.x, nextZ)) {
+            finalX = game.player.position.x;
+            finalZ = nextZ;
+            game.movement.velocity.x = 0; // Stop X velocity on collision
+        } else {
+            // Collision in both axes, stop completely
+            game.movement.velocity.x = 0;
+            game.movement.velocity.z = 0;
+        }
+    }
+
+    // Update player position
+    game.player.position.x = finalX;
+    game.player.position.z = finalZ;
+
+    // Update camera position
     game.camera.position.x = game.player.position.x;
     game.camera.position.z = game.player.position.z;
-    game.camera.rotation.y = game.player.rotation.y;
 
-    // End movement when complete
-    if (game.movement.progress >= 1) {
-        game.movement.isMoving = false;
-        game.movement.isRotating = false;
-        game.movement.progress = 0;
+    // Play footstep sounds when moving
+    const isMoving = Math.abs(game.movement.velocity.x) > 0.1 || Math.abs(game.movement.velocity.z) > 0.1;
+    if (isMoving && game.audioInitialized) {
+        // Play footstep at intervals based on speed
+        if (!game.lastFootstepTime) game.lastFootstepTime = 0;
+        const footstepInterval = game.movement.isSprinting ? 300 : 450; // milliseconds
+
+        if (game.time * 1000 - game.lastFootstepTime > footstepInterval) {
+            const numVariations = SOUND_CONFIG.footsteps.stone.files.length;
+            game.audio.playRandomVariation('footsteps', 'stone', numVariations, 150);
+            game.lastFootstepTime = game.time * 1000;
+        }
     }
 }
 
@@ -674,9 +712,13 @@ function updateUI() {
 
     const masterVolume = game.audio ? Math.round(game.audio.masterVolume * 100) : 100;
 
+    const mouseLockStatus = game.mouse.isLocked
+        ? '<span style="color: #0f0;">ACTIVE</span>'
+        : '<span style="color: #ff0;">Click to activate</span>';
+
     const uiHTML = `
         <div style="font-size: 16px;">
-            <div style="margin-bottom: 10px;">Kings Field - Ready</div>
+            <div style="margin-bottom: 10px;">Kings Field - Real-time Controls</div>
             <div style="margin-bottom: 5px;">
                 Health: <span style="color: ${healthColor}">${game.player.health.current}/${game.player.health.max}</span>
             </div>
@@ -688,7 +730,10 @@ function updateUI() {
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | Q/E: Rotate | SPACE: Attack | 1-4: Weapons
+                Mouse Look: ${mouseLockStatus}
+            </div>
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                WASD: Move | SHIFT: Sprint | SPACE: Attack | 1-4: Weapons
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
                 Audio: ${audioStatus}

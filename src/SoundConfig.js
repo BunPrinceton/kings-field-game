@@ -148,6 +148,91 @@ export const SOUND_CONFIG = {
             volume: 0.3,
             positional: true,
             cooldown: 5000 // Only play occasionally
+        },
+        // Door transition sounds (Resident Evil style)
+        door_handle_wood: {
+            files: ['sounds/environment/door_handle_wood.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: false,
+            cooldown: 100
+        },
+        door_handle_metal: {
+            files: ['sounds/environment/door_handle_metal.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: false,
+            cooldown: 100
+        },
+        door_handle_ornate: {
+            files: ['sounds/environment/door_handle_ornate.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: false,
+            cooldown: 100
+        },
+        door_creak_wood: {
+            files: ['sounds/environment/door_creak_wood.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: false,
+            cooldown: 200
+        },
+        door_creak_metal: {
+            files: ['sounds/environment/door_creak_metal.ogg'],
+            loop: false,
+            volume: 0.7,
+            positional: false,
+            cooldown: 200
+        },
+        door_creak_ornate: {
+            files: ['sounds/environment/door_creak_ornate.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: false,
+            cooldown: 200
+        },
+        door_open_wood: {
+            files: ['sounds/environment/door_open_wood.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: false,
+            cooldown: 100
+        },
+        door_open_heavy: {
+            files: ['sounds/environment/door_open_heavy.ogg'],
+            loop: false,
+            volume: 0.7,
+            positional: false,
+            cooldown: 100
+        },
+        door_open_grand: {
+            files: ['sounds/environment/door_open_grand.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: false,
+            cooldown: 100
+        },
+        door_footstep: {
+            files: ['sounds/environment/door_footstep.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: false,
+            cooldown: 200
+        },
+        door_footstep_slow: {
+            files: ['sounds/environment/door_footstep_slow.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: false,
+            cooldown: 200
+        },
+        door_footstep_confident: {
+            files: ['sounds/environment/door_footstep_confident.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: false,
+            cooldown: 200
         }
     },
 

@@ -112,7 +112,9 @@ export class FurnitureManager {
             condition: options.condition || this.config.defaultCondition,
             scale: options.scale || 1,
             interactable: options.interactable !== undefined ? options.interactable : false,
-            state: options.state || {} // For doors (open/closed), chests (open/closed), etc.
+            state: options.state || {}, // For doors (open/closed), chests (open/closed), etc.
+            isInstanceDoor: options.isInstanceDoor || false, // Mark as instance transition door
+            instanceTarget: options.instanceTarget || null // Target instance/room to load
         };
 
         let furnitureObject;
@@ -273,18 +275,79 @@ export class FurnitureManager {
             // Store metadata
             furnitureObject.userData.furnitureData = furnitureData;
             furnitureObject.userData.furnitureType = type;
+            furnitureObject.userData.isInstanceDoor = furnitureData.isInstanceDoor;
+            furnitureObject.userData.instanceTarget = furnitureData.instanceTarget;
+
+            // Add visual indicator for instance doors
+            if (furnitureData.isInstanceDoor) {
+                this.addInstanceDoorIndicator(furnitureObject);
+            }
 
             // Add to scene
             this.scene.add(furnitureObject);
             this.furniture.push(furnitureObject);
 
             // Track interactable furniture
-            if (furnitureData.interactable) {
+            if (furnitureData.interactable || furnitureData.isInstanceDoor) {
                 this.interactables.set(furnitureObject, furnitureData);
             }
         }
 
         return furnitureObject;
+    }
+
+    // ==================== INSTANCE DOOR METHODS ====================
+
+    /**
+     * Add visual indicator to instance doors
+     */
+    addInstanceDoorIndicator(doorObject) {
+        // Add a glowing particle effect or light to indicate this is special
+        const glowGeometry = new THREE.SphereGeometry(0.15, 16, 16);
+        const glowMaterial = new THREE.MeshStandardMaterial({
+            color: 0x00ffff,
+            emissive: 0x00ffff,
+            emissiveIntensity: 1.0,
+            transparent: true,
+            opacity: 0.6
+        });
+
+        const glow = new THREE.Mesh(glowGeometry, glowMaterial);
+        glow.position.set(0, 1.5, 0.15);
+        doorObject.add(glow);
+
+        // Add pulsing animation
+        const startTime = Date.now();
+        const animate = () => {
+            if (!doorObject.parent) return; // Stop if door removed
+
+            const elapsed = Date.now() - startTime;
+            const pulse = Math.sin(elapsed * 0.003) * 0.5 + 0.5;
+            glowMaterial.emissiveIntensity = 0.5 + pulse * 0.5;
+            glow.scale.setScalar(0.8 + pulse * 0.4);
+
+            requestAnimationFrame(animate);
+        };
+        animate();
+
+        // Add point light
+        const light = new THREE.PointLight(0x00ffff, 1, 3);
+        light.position.copy(glow.position);
+        doorObject.add(light);
+    }
+
+    /**
+     * Check if a door is an instance door
+     */
+    isInstanceDoor(furnitureObject) {
+        return furnitureObject?.userData?.isInstanceDoor === true;
+    }
+
+    /**
+     * Get instance target for a door
+     */
+    getInstanceTarget(furnitureObject) {
+        return furnitureObject?.userData?.instanceTarget;
     }
 
     // ==================== DOOR CREATION METHODS ====================
@@ -2049,11 +2112,22 @@ export class FurnitureManager {
     /**
      * Interact with furniture (generic handler)
      */
-    interact(furnitureObject) {
+    interact(furnitureObject, options = {}) {
         const data = furnitureObject.userData.furnitureData;
-        if (!data || !data.interactable) return false;
+        if (!data || (!data.interactable && !data.isInstanceDoor)) return false;
 
         const type = furnitureObject.userData.furnitureType;
+
+        // Check if this is an instance door (takes priority)
+        if (data.isInstanceDoor) {
+            // Return special flag indicating instance door interaction
+            return {
+                type: 'instance_door',
+                doorType: type,
+                instanceTarget: data.instanceTarget,
+                furnitureObject: furnitureObject
+            };
+        }
 
         // Handle different furniture types
         if (type === FurnitureType.WOODEN_DOOR ||
@@ -2061,27 +2135,34 @@ export class FurnitureManager {
             type === FurnitureType.ORNATE_DOOR ||
             type === FurnitureType.REINFORCED_DOOR) {
             this.toggleDoor(furnitureObject);
-            return true;
+            return { type: 'regular_door' };
         }
 
         if (type === FurnitureType.PORTCULLIS) {
             this.togglePortcullis(furnitureObject);
-            return true;
+            return { type: 'portcullis' };
         }
 
         if (type === FurnitureType.LARGE_GATE ||
             type === FurnitureType.DUNGEON_GATE) {
             this.toggleGate(furnitureObject);
-            return true;
+            return { type: 'gate' };
         }
 
         if (type === FurnitureType.CHEST) {
             // Chest interaction would open inventory or loot
             console.log('Opening chest...');
-            return true;
+            return { type: 'chest' };
         }
 
         return false;
+    }
+
+    /**
+     * Clear all furniture (for level transitions)
+     */
+    clearAll() {
+        this.dispose();
     }
 
     /**

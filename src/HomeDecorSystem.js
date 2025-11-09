@@ -1328,6 +1328,13 @@ export class HomeDecorSystem {
     }
 
     /**
+     * Clear all decorations (for level transitions)
+     */
+    clearAll() {
+        this.dispose();
+    }
+
+    /**
      * Dispose of all decorations
      */
     dispose() {

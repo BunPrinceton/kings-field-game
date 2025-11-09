@@ -77,6 +77,85 @@ export class DungeonBuilder {
         };
     }
 
+    /**
+     * Get portal placement positions for POI rooms
+     * Returns an array of {roomId, position, instanceId, metadata}
+     */
+    getInstancePortalPlacements() {
+        const placements = [];
+
+        for (const room of this.dungeonData.rooms) {
+            // Determine which rooms should have instance portals
+            const portalConfig = this.getPortalConfigForRoom(room);
+            if (portalConfig) {
+                const worldPos = this.gridToWorld(room.centerX, room.centerY);
+                placements.push({
+                    portalId: `portal_${room.id}`,
+                    roomId: room.id,
+                    position: new THREE.Vector3(worldPos.x, 0.1, worldPos.z),
+                    instanceId: portalConfig.instanceId,
+                    metadata: {
+                        type: portalConfig.type,
+                        name: portalConfig.name
+                    }
+                });
+            }
+        }
+
+        return placements;
+    }
+
+    /**
+     * Determine portal configuration for a room based on its type
+     */
+    getPortalConfigForRoom(room) {
+        // Map POI types to instance IDs
+        const poiToInstance = {
+            [POIType.BOSS]: {
+                instanceId: 'boss_arena_demon_lord',
+                type: 'boss_arena',
+                name: 'Boss Arena Portal'
+            },
+            [POIType.TREASURE]: {
+                instanceId: 'treasure_vault',
+                type: 'treasure_vault',
+                name: 'Treasure Vault Portal'
+            },
+            [POIType.SAFE]: {
+                instanceId: 'safe_haven',
+                type: 'safe_haven',
+                name: 'Safe Haven Portal'
+            },
+            [POIType.PUZZLE]: {
+                instanceId: 'puzzle_chamber_runes',
+                type: 'puzzle_chamber',
+                name: 'Puzzle Chamber Portal'
+            }
+        };
+
+        // Add some special instances for certain rooms
+        if (room.type === POIType.HUB && room.id === 'center_hub') {
+            // Center hub gets a library portal
+            return {
+                instanceId: 'grand_library',
+                type: 'grand_library',
+                name: 'Grand Library Portal'
+            };
+        }
+
+        return poiToInstance[room.type] || null;
+    }
+
+    /**
+     * Convert grid coordinates to world coordinates
+     */
+    gridToWorld(gridX, gridY) {
+        return {
+            x: gridX * this.config.cellSize,
+            z: gridY * this.config.cellSize
+        };
+    }
+
     async loadMaterials() {
         console.log('Loading dungeon materials...');
         try {

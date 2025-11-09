@@ -381,10 +381,17 @@ export class TrapManager {
     }
 
     /**
+     * Clear all traps (for level transitions)
+     */
+    clearTraps() {
+        this.traps.forEach(trap => trap.destroy());
+        this.traps = [];
+    }
+
+    /**
      * Clean up
      */
     destroy() {
-        this.traps.forEach(trap => trap.destroy());
-        this.traps = [];
+        this.clearTraps();
     }
 }

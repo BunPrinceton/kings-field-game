@@ -269,6 +269,14 @@ export class MinimapRenderer {
   }
 
   /**
+   * Update minimap with new dungeon data (for level transitions)
+   */
+  updateDungeon(dungeonData) {
+    this.dungeonData = dungeonData;
+    this.resetFogOfWar();
+  }
+
+  /**
    * Clean up
    */
   dispose() {

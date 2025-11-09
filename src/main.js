@@ -19,6 +19,10 @@ import { PaintingInteraction } from './PaintingInteraction.js';
 import { ChestManager } from './ChestManager.js';
 import { TrapManager } from './TrapManager.js';
 import { FurnitureDecorator } from './FurnitureDecorator.js';
+import { LoadingScreen } from './LoadingScreen.js';
+import { StairManager } from './StairManager.js';
+import { InstanceManager } from './instances/InstanceManager.js';
+import { PortalManager } from './instances/InstancePortal.js';
 
 // Health system class
 class Health {
@@ -297,10 +301,15 @@ const game = {
     },
     minimap: null, // MinimapRenderer instance
     viewmodel: null, // ViewmodelRenderer instance
-paintingGallery: null, // PaintingGallery instance
-    paintingInteraction: null // PaintingInteraction instance
-chestManager: null, // ChestManager instance
-    trapManager: null // TrapManager instance
+    paintingGallery: null, // PaintingGallery instance
+    paintingInteraction: null, // PaintingInteraction instance
+    chestManager: null, // ChestManager instance
+    trapManager: null, // TrapManager instance
+    loadingScreen: null, // LoadingScreen instance
+    stairManager: null, // StairManager instance
+    currentLevel: 1, // Current dungeon level
+    instanceManager: null, // InstanceManager instance
+    portalManager: null // PortalManager instance
 };
 
 // Audio initialization
@@ -480,6 +489,250 @@ function tryInteractWithFurniture() {
     }
 }
 
+// Try to interact with nearby stairs
+async function tryInteractWithStairs() {
+    if (!game.stairManager) return;
+
+    const nearestStair = game.stairManager.checkInteraction(game.player.position);
+
+    if (nearestStair) {
+        console.log(`Using stairs ${nearestStair.direction} to level ${nearestStair.targetLevel}`);
+        await transitionToLevel(nearestStair.targetLevel, nearestStair.direction);
+    }
+}
+
+// Try to interact with nearby instance portals
+async function tryInteractWithPortal() {
+    if (!game.portalManager || !game.instanceManager) return;
+
+    // If in instance, check for exit
+    if (game.instanceManager.isInInstance) {
+        if (game.instanceManager.canExitInstance(game.player)) {
+            console.log('Exiting instance...');
+            await game.instanceManager.exitInstance(game.player);
+            updateUI();
+        }
+        return;
+    }
+
+    // Find nearest portal in dungeon
+    const nearestPortal = game.portalManager.findNearestPortal(game.player.position, 2.5);
+
+    if (nearestPortal && nearestPortal.isActive) {
+        console.log(`Entering instance: ${nearestPortal.instanceId}`);
+
+        // Activate portal visual feedback
+        nearestPortal.activate();
+
+        // Get dungeon state to restore later
+        const dungeonState = {
+            scene: game.scene,
+            camera: game.camera,
+            enemies: game.enemies,
+            collidableObjects: game.collidableObjects
+        };
+
+        // Enter instance
+        const success = await game.instanceManager.enterInstance(
+            nearestPortal.instanceId,
+            dungeonState,
+            game.player
+        );
+
+        if (success) {
+            console.log('Successfully entered instance');
+            updateUI();
+        }
+    }
+}
+
+// Transition to a new level
+async function transitionToLevel(targetLevel, direction = 'down') {
+    // Prevent multiple transitions
+    if (game.loadingScreen.isActive) return;
+
+    // Show loading screen
+    const loadingText = direction === 'down' ? 'DESCENDING...' : 'ASCENDING...';
+    await game.loadingScreen.show(loadingText);
+
+    // Simulate loading with progress
+    const loadingPromise = game.loadingScreen.simulateLoading(2000, 3000);
+
+    // Generate new level while loading screen is visible
+    setTimeout(async () => {
+        // Clear old dungeon
+        clearCurrentLevel();
+
+        // Update level
+        game.currentLevel = targetLevel;
+        game.stairManager.setCurrentLevel(targetLevel);
+
+        // Generate new dungeon
+        await generateNewLevel();
+
+        // Wait for loading to complete
+        await loadingPromise;
+
+        // Hide loading screen
+        await game.loadingScreen.hide();
+
+        console.log(`Transitioned to level ${targetLevel}`);
+    }, 500);
+}
+
+// Clear current level
+function clearCurrentLevel() {
+    // Remove all dungeon meshes
+    if (game.dungeon.builder && game.dungeon.builder.meshes) {
+        for (const mesh of game.dungeon.builder.meshes) {
+            if (mesh.parent) {
+                mesh.parent.remove(mesh);
+            }
+        }
+    }
+
+    // Clear enemies
+    for (const enemy of game.enemies) {
+        if (enemy.mesh && enemy.mesh.parent) {
+            enemy.mesh.parent.remove(enemy.mesh);
+        }
+    }
+    game.enemies = [];
+
+    // Clear stairs
+    if (game.stairManager) {
+        game.stairManager.clearStairs();
+    }
+
+    // Clear chests
+    if (game.chestManager) {
+        game.chestManager.clearChests();
+    }
+
+    // Clear traps
+    if (game.trapManager) {
+        game.trapManager.clearTraps();
+    }
+
+    // Clear furniture
+    if (game.dungeon.furniture) {
+        const furnitureManager = game.dungeon.furniture.getFurnitureManager();
+        if (furnitureManager) {
+            furnitureManager.clearAll();
+        }
+    }
+
+    // Clear home decor
+    if (game.dungeon.homeDecor) {
+        game.dungeon.homeDecor.clearAll();
+    }
+
+    game.collidableObjects = [];
+}
+
+// Generate a new level
+async function generateNewLevel() {
+    // Generate dungeon with POI system
+    game.dungeon.generator = new DungeonGenerator(60, 60, {
+        minRoomSize: 3,
+        maxRoomSize: 7,
+        maxRooms: 30,
+        centerSymmetryRadius: 10,
+        hubCount: 3,
+        treasureRoomCount: 4,
+        safeRoomCount: 2,
+        puzzleRoomCount: 2,
+        landmarkCount: 3,
+        sideAreaChance: 0.3
+    });
+
+    game.dungeon.data = game.dungeon.generator.generate();
+
+    console.log(`Level ${game.currentLevel} generated:`, {
+        rooms: game.dungeon.data.rooms.length,
+        pois: game.dungeon.data.pois.size
+    });
+
+    // Build dungeon geometry
+    game.dungeon.builder = new DungeonBuilder(game.scene, game.dungeon.data, {
+        cellSize: 4,
+        wallHeight: 3.5,
+        useTextures: false,
+        collidableObjects: game.collidableObjects
+    });
+    await game.dungeon.builder.build();
+
+    // Populate collidable objects
+    game.collidableObjects = game.dungeon.builder.meshes.filter(mesh => {
+        return mesh.geometry instanceof THREE.BoxGeometry && mesh.position.y > 0.5;
+    });
+
+    for (const obj of game.collidableObjects) {
+        const gridX = Math.round(obj.position.x / 4);
+        const gridZ = Math.round(obj.position.z / 4);
+        obj.userData.gridPos = { x: gridX, z: gridZ };
+    }
+
+    // Place furniture
+    game.dungeon.furniture = new FurnitureDecorator(
+        game.scene,
+        game.dungeon.data,
+        {
+            cellSize: 4,
+            wallHeight: 3.5,
+            furnitureDensity: 0.6
+        }
+    );
+    game.dungeon.furniture.decorateRooms();
+    game.dungeon.furniture.addDoorsToCorridors();
+
+    // Initialize Home Decor System
+    game.dungeon.homeDecor = new HomeDecorSystem(
+        game.scene,
+        game.dungeon.data,
+        {
+            cellSize: 4,
+            wallHeight: 3.5,
+            decorDensity: 0.7,
+            enableLighting: true
+        }
+    );
+    await game.dungeon.homeDecor.decorateAllRooms();
+
+    // Place chests
+    game.chestManager = new ChestManager(game.scene, game.dungeon.data, game.itemManager, game.audio);
+    game.chestManager.placeChests();
+
+    // Place traps
+    game.trapManager = new TrapManager(game.scene, game.dungeon.data, game.audio);
+    game.trapManager.placeTraps();
+
+    // Place stairs
+    game.stairManager.dungeonData = game.dungeon.data;
+    game.stairManager.placeStairs();
+
+    // Set player spawn position
+    const spawnPos = game.dungeon.generator.getSpawnPosition();
+    game.player.position.x = spawnPos.x * 4;
+    game.player.position.z = spawnPos.z * 4;
+
+    game.camera.position.set(
+        game.player.position.x,
+        game.player.position.y,
+        game.player.position.z
+    );
+
+    // Spawn enemies
+    spawnEnemies();
+
+    // Update minimap with new dungeon
+    if (game.minimap) {
+        game.minimap.updateDungeon(game.dungeon.data);
+    }
+
+    updateUI();
+}
+
 // Input handling
 function setupInput() {
     window.addEventListener('keydown', (e) => {
@@ -497,6 +750,10 @@ function setupInput() {
         // Handle furniture interaction (E key)
         if (e.code === 'KeyE') {
             tryInteractWithFurniture();
+            // Also check for stair interaction
+            tryInteractWithStairs();
+            // Also check for portal interaction
+            tryInteractWithPortal();
         }
 
         // Handle sprint (Shift)
@@ -810,6 +1067,10 @@ async function init() {
     game.audio = new AudioManager(game.camera);
     console.log('Audio system created (will initialize on first user interaction)');
 
+    // Initialize loading screen
+    game.loadingScreen = new LoadingScreen();
+    console.log('Loading screen initialized');
+
     // Create some starter swords and add to inventory
     const startingSword = game.itemManager.createItem('short_sword');
     if (startingSword) {
@@ -970,6 +1231,36 @@ async function init() {
     game.trapManager = new TrapManager(game.scene, game.dungeon.data, game.audio);
     game.trapManager.placeTraps();
     console.log('Trap Manager initialized:', game.trapManager.getStats());
+
+    // Initialize Instance Manager
+    console.log('Initializing Instance Manager...');
+    game.instanceManager = new InstanceManager(game.renderer, game.audio);
+    console.log('Instance Manager initialized');
+
+    // Initialize Portal Manager and place portals
+    console.log('Placing instance portals...');
+    game.portalManager = new PortalManager(game.scene);
+    const portalPlacements = game.dungeon.builder.getInstancePortalPlacements();
+    for (const placement of portalPlacements) {
+        game.portalManager.createPortal(
+            placement.portalId,
+            placement.position,
+            placement.instanceId,
+            placement.metadata
+        );
+    }
+    console.log(`Placed ${portalPlacements.length} instance portals`);
+
+    // Initialize Stair Manager
+    console.log('Initializing Stair Manager...');
+    game.stairManager = new StairManager(game.scene, game.dungeon.data, {
+        cellSize: 4,
+        wallHeight: 3.5,
+        interactionRange: 3.0
+    });
+    game.stairManager.setCurrentLevel(game.currentLevel);
+    game.stairManager.placeStairs();
+    console.log('Stair Manager initialized:', game.stairManager.getStats());
 
     // Initialize player (now as Player class instance)
     game.player = new Player(game.scene);
@@ -1195,14 +1486,48 @@ function updateUI() {
         }
     }
 
+    // Check for nearby stairs
+    let stairPrompt = '';
+    if (game.stairManager) {
+        const nearestStair = game.stairManager.getNearestStair(game.player.position);
+        if (nearestStair && nearestStair.distance < 3.0) {
+            const stair = nearestStair.stair;
+            const directionText = stair.direction === 'down' ? 'DOWN' : 'UP';
+            const color = stair.direction === 'down' ? '#ff6666' : '#66ff66';
+            const borderColor = stair.direction === 'down' ? '#ff6666' : '#66ff66';
+            stairPrompt = `<div style="font-size: 13px; color: ${color}; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.6); border: 1px solid ${borderColor};">Press E - Stairs ${directionText} (Level ${stair.targetLevel})</div>`;
+        }
+    }
+
+    // Check for nearby portals or instance exit
+    let portalPrompt = '';
+    if (game.instanceManager?.isInInstance) {
+        // In instance - check for exit
+        if (game.instanceManager.canExitInstance(game.player)) {
+            portalPrompt = '<div style="font-size: 13px; color: #00ff88; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.6); border: 1px solid #00ff88;">Press E - Return to Dungeon</div>';
+        } else if (game.instanceManager.currentInstance?.isLocked) {
+            portalPrompt = '<div style="font-size: 13px; color: #ff4400; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.6); border: 1px solid #ff4400;">Exit Locked - Complete objectives</div>';
+        }
+    } else if (game.portalManager) {
+        // In dungeon - check for portals
+        const nearestPortal = game.portalManager.findNearestPortal(game.player.position, 2.5);
+        if (nearestPortal) {
+            const metadata = game.instanceManager?.getInstanceMetadata(nearestPortal.instanceId);
+            const portalName = metadata?.name || 'Unknown Instance';
+            const completedText = metadata?.isCompleted ? ' [COMPLETED]' : '';
+            portalPrompt = `<div style="font-size: 13px; color: #88aaff; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.6); border: 1px solid #88aaff;">Press E - Enter ${portalName}${completedText}</div>`;
+        }
+    }
+
     // Get chest and trap stats
     let statsInfo = '';
-    if (game.chestManager && game.trapManager) {
+    if (game.chestManager && game.trapManager && game.stairManager) {
         const chestStats = game.chestManager.getStats();
         const trapStats = game.trapManager.getStats();
+        const stairStats = game.stairManager.getStats();
         statsInfo = `
             <div style="font-size: 11px; opacity: 0.5; margin-top: 5px;">
-                Chests: ${chestStats.opened}/${chestStats.total} opened | Traps: ${trapStats.total}
+                Level: ${stairStats.currentLevel}/${stairStats.maxLevel} | Chests: ${chestStats.opened}/${chestStats.total} | Traps: ${trapStats.total}
             </div>
         `;
     }
@@ -1220,6 +1545,8 @@ function updateUI() {
             ${inventoryInfo}
             ${armorInfo}
             ${chestPrompt}
+            ${stairPrompt}
+            ${portalPrompt}
             <div style="font-size: 12px; opacity: 0.7; margin-top: 10px;">
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
@@ -1297,6 +1624,11 @@ function update(deltaTime) {
     // Update trap manager
     if (game.trapManager) {
         game.trapManager.update(deltaTime);
+    }
+
+    // Update stair manager (animations)
+    if (game.stairManager) {
+        game.stairManager.update(deltaTime / 1000); // Convert to seconds
     }
 
     // Check for trap triggers
@@ -1468,6 +1800,16 @@ function animate() {
         game.dungeon.homeDecor.animateFlames(game.time);
     }
 
+    // Update portals (only when in dungeon)
+    if (game.portalManager && !game.instanceManager?.isInInstance) {
+        game.portalManager.update(deltaTimeSec);
+    }
+
+    // Update instance (if in instance)
+    if (game.instanceManager && game.instanceManager.isInInstance) {
+        game.instanceManager.update(deltaTimeSec, game.player);
+    }
+
     // Check if player is moving for viewmodel bob
     const playerIsMoving = Math.abs(game.movement.velocity.x) > 0.1 ||
                           Math.abs(game.movement.velocity.z) > 0.1;
@@ -1494,8 +1836,9 @@ function animate() {
         );
     }
 
-    // Render main scene
-    game.renderer.render(game.scene, game.camera);
+    // Render correct scene (dungeon or instance)
+    const currentScene = game.instanceManager?.getCurrentScene(game.scene) || game.scene;
+    game.renderer.render(currentScene, game.camera);
 
     // Render viewmodel on top (separate render pass)
     if (game.viewmodel) {

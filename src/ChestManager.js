@@ -235,10 +235,17 @@ export class ChestManager {
     }
 
     /**
+     * Clear all chests (for level transitions)
+     */
+    clearChests() {
+        this.chests.forEach(chest => chest.destroy());
+        this.chests = [];
+    }
+
+    /**
      * Clean up
      */
     destroy() {
-        this.chests.forEach(chest => chest.destroy());
-        this.chests = [];
+        this.clearChests();
     }
 }

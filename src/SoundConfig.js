@@ -84,6 +84,49 @@ export const SOUND_CONFIG = {
             volume: 0.7,
             positional: false,
             cooldown: 200
+        },
+        // Trap sounds
+        trap_spike: {
+            files: ['sounds/combat/trap_spike.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: true,
+            cooldown: 200
+        },
+        trap_arrow: {
+            files: ['sounds/combat/trap_arrow.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: true,
+            cooldown: 200
+        },
+        trap_blade: {
+            files: ['sounds/combat/trap_blade.ogg'],
+            loop: false,
+            volume: 0.7,
+            positional: true,
+            cooldown: 200
+        },
+        trap_pit: {
+            files: ['sounds/combat/trap_pit.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: true,
+            cooldown: 200
+        },
+        trap_fire: {
+            files: ['sounds/combat/trap_fire.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: true,
+            cooldown: 200
+        },
+        trap_boulder: {
+            files: ['sounds/combat/trap_boulder.ogg'],
+            loop: false,
+            volume: 0.7,
+            positional: true,
+            cooldown: 200
         }
     },
 
@@ -123,6 +166,20 @@ export const SOUND_CONFIG = {
             volume: 0.4,
             positional: false,
             cooldown: 100
+        },
+        chest_open: {
+            files: ['sounds/ui/chest_open.ogg'],
+            loop: false,
+            volume: 0.6,
+            positional: true,
+            cooldown: 200
+        },
+        chest_locked: {
+            files: ['sounds/ui/chest_locked.ogg'],
+            loop: false,
+            volume: 0.5,
+            positional: true,
+            cooldown: 200
         }
     },
 

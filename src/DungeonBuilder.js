@@ -253,17 +253,21 @@ export class DungeonBuilder {
     }
 
     placeTorches() {
-        // Place torches in rooms
+        // Place torches in rooms (optimized to reduce total light count)
         for (const room of this.dungeonData.rooms) {
             // Place torches on walls of larger rooms
-            if (room.width > 4 && room.height > 4) {
-                // Place in corners
+            if (room.width > 6 && room.height > 6) {
+                // Very large rooms get 4 torches in corners
                 this.createTorch(room.x + 1, room.y + 1);
                 this.createTorch(room.x + room.width - 2, room.y + 1);
                 this.createTorch(room.x + 1, room.y + room.height - 2);
                 this.createTorch(room.x + room.width - 2, room.y + room.height - 2);
+            } else if (room.width > 4 && room.height > 4) {
+                // Medium rooms get 2 torches on opposite corners
+                this.createTorch(room.x + 1, room.y + 1);
+                this.createTorch(room.x + room.width - 2, room.y + room.height - 2);
             } else {
-                // Place in center of smaller rooms
+                // Small rooms get 1 torch in center
                 this.createTorch(room.centerX, room.centerY);
             }
         }
@@ -582,14 +586,23 @@ export class DungeonBuilder {
     }
 
     animateTorches(time) {
-        // Flicker effect for torches
-        for (const torch of this.torches) {
+        // Realistic flicker effect for torches
+        for (let i = 0; i < this.torches.length; i++) {
+            const torch = this.torches[i];
             if (torch.light) {
-                const flicker = Math.sin(time * 8) * 0.1 + Math.sin(time * 13) * 0.05;
-                torch.light.intensity = 2 + flicker;
+                // Each torch flickers independently with multiple frequencies
+                const offset = i * 1.3; // Phase offset per torch
+                const flicker =
+                    Math.sin((time + offset) * 8) * 0.15 +      // Main flicker
+                    Math.sin((time + offset) * 13.7) * 0.08 +   // Fast shimmer
+                    Math.sin((time + offset) * 3.2) * 0.12;     // Slow wave
+
+                torch.light.intensity = 2.0 + flicker;
 
                 if (torch.flame) {
-                    torch.flame.scale.setScalar(1 + flicker * 0.2);
+                    // Flame scales with intensity but slightly exaggerated
+                    const flameScale = 1 + flicker * 0.3;
+                    torch.flame.scale.setScalar(flameScale);
                 }
             }
         }

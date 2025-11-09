@@ -13,6 +13,8 @@ import { MinimapRenderer } from './MinimapRenderer.js';
 import { ViewmodelRenderer } from './ViewmodelRenderer.js';
 import { ItemManager, Inventory } from './ItemManager.js';
 import { Sword } from './Sword.js';
+import { PaintingGallery } from './PaintingGallery.js';
+import { PaintingInteraction } from './PaintingInteraction.js';
 
 // Health system class
 class Health {
@@ -39,18 +41,24 @@ class Health {
     }
 }
 
+// Constants
+const PLAYER_EYE_HEIGHT = 1.6;
+const ATTACK_COOLDOWN_MS = 500;
+const FOOTSTEP_SPRINT_INTERVAL = 300;
+const FOOTSTEP_WALK_INTERVAL = 450;
+
 // Player class
 class Player {
     constructor(scene) {
         this.scene = scene;
         this.health = new Health(100);
-        this.position = { x: 0, y: 1.6, z: 5 };
+        this.position = { x: 0, y: PLAYER_EYE_HEIGHT, z: 5 };
         this.rotation = { x: 0, y: 0 };
         this.attackPower = 25;
         this.attackRange = 2.5;
         this.isAttacking = false;
         this.attackCooldown = 0;
-        this.attackCooldownMax = 500; // milliseconds
+        this.attackCooldownMax = ATTACK_COOLDOWN_MS;
 
         // Armor system
         this.armorSystem = new ArmorSystem(scene);
@@ -282,7 +290,9 @@ const game = {
         attack: false
     },
     minimap: null, // MinimapRenderer instance
-    viewmodel: null // ViewmodelRenderer instance
+    viewmodel: null, // ViewmodelRenderer instance
+    paintingGallery: null, // PaintingGallery instance
+    paintingInteraction: null // PaintingInteraction instance
 };
 
 // Audio initialization
@@ -690,7 +700,7 @@ function updateMovement(deltaTime) {
     if (game.movement.isMoving && game.audioInitialized) {
         // Play footstep at intervals based on speed
         if (!game.lastFootstepTime) game.lastFootstepTime = 0;
-        const footstepInterval = game.movement.isSprinting ? 300 : 450; // milliseconds
+        const footstepInterval = game.movement.isSprinting ? FOOTSTEP_SPRINT_INTERVAL : FOOTSTEP_WALK_INTERVAL;
 
         if (game.time * 1000 - game.lastFootstepTime > footstepInterval) {
             const numVariations = SOUND_CONFIG.footsteps.stone.files.length;
@@ -752,6 +762,10 @@ async function init() {
 
     console.log('Added additional swords to inventory for testing');
 
+    // Initialize painting gallery
+    game.paintingGallery = new PaintingGallery();
+    console.log('Painting gallery initialized');
+
     // Renderer setup
     game.renderer = new THREE.WebGLRenderer({ antialias: true });
     game.renderer.setSize(window.innerWidth, window.innerHeight);
@@ -797,9 +811,10 @@ async function init() {
         cellSize: 4,
         wallHeight: 3.5,
         useTextures: false,  // Disabled to prevent WebGL texture limit errors
-        collidableObjects: game.collidableObjects  // Pass array for collision detection
+        collidableObjects: game.collidableObjects,  // Pass array for collision detection
+        paintingGallery: game.paintingGallery  // Pass painting gallery for placement
     });
-    await game.dungeon.builder.build();
+    const buildResult = await game.dungeon.builder.build();
 
     // Populate collidable objects for collision detection
     // Use wall meshes from the builder
@@ -859,6 +874,10 @@ async function init() {
         game.player.position.y,
         game.player.position.z
     );
+
+    // Initialize painting interaction system
+    game.paintingInteraction = new PaintingInteraction(game.camera, buildResult.paintings || []);
+    console.log(`Painting interaction system initialized with ${buildResult.paintings?.length || 0} paintings`);
 
     // Spawn enemies in the dungeon
     spawnEnemies();
@@ -1289,6 +1308,11 @@ function animate() {
     // Update viewmodel (hands + sword)
     if (game.viewmodel) {
         game.viewmodel.update(deltaTimeSec, playerIsMoving);
+    }
+
+    // Update painting interaction system
+    if (game.paintingInteraction) {
+        game.paintingInteraction.update();
     }
 
     // Update minimap

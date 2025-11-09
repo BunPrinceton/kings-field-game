@@ -1,0 +1,148 @@
+╔══════════════════════════════════════════════════════════════════════════╗
+║                    AGENT 4: CLEANUP SPECIALIST                           ║
+║                        QUICK REFERENCE CARD                              ║
+╚══════════════════════════════════════════════════════════════════════════╝
+
+📖 WHERE TO START
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Want quick wins?       → Read CLEANUP_QUICK_WINS.md
+  Want full context?     → Read AGENT_4_SUMMARY.md
+  Want detailed plans?   → Read CLEANUP_AGENT_PLAN.md
+  Need safety rules?     → Read CLEANUP_CONFLICT_MATRIX.md
+  Curious about issues?  → Read ISSUE_CATEGORIZATION.md
+
+🎯 THE 20 FIXES AT A GLANCE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  TIER 1: Constants (30 min)
+    #1  Player eye height: 1.6 → PLAYER_EYE_HEIGHT
+    #2  Attack cooldown: 500 → ATTACK_COOLDOWN_MS
+    #3  Footstep timing → FOOTSTEP_TIMING config
+    #4  Hit window: 0.4-0.6 → WeaponSystem constants
+    #5  Cell size: 4 → DUNGEON_CONSTANTS.CELL_SIZE
+
+  TIER 2: Null Safety (45 min)
+    #6  SOUND_CONFIG optional chaining
+    #7  Enemy validation in attack
+    #8  Room lookup early return
+    #9  Minimap enemy guard
+    #10 WeaponSystem equipment check
+
+  TIER 3: Console Cleanup (20 min)
+    #11 ItemManager debug logs (remove)
+    #12 AudioManager init log (remove)
+    #13 TextureManager logs (remove)
+
+  TIER 4: Dead Code (15 min)
+    #14 Shadow code comments (remove)
+    #15 Decorations comments (remove)
+    #16 Atmospheric comments (remove)
+
+  TIER 5: Documentation (60 min)
+    #17 Player class JSDoc
+    #18 Health class JSDoc
+    #19 HitEffects class JSDoc
+    #20 MinimapRenderer JSDoc
+
+🚦 TRAFFIC LIGHT SYSTEM
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  🟢 GREEN (Full Autonomy)
+     Magic numbers, JSDoc, dead code, console.log, null checks
+
+  🟡 YELLOW (Coordinate First)
+     Shared constants, footstep timing, event listeners (docs only)
+
+  🔴 RED (Don't Touch)
+     game object, collidableObjects, DungeonBuilder.build(), 
+     scene management, UI loop, particle pooling, P0/P1 bugs
+
+📁 FILES YOU'LL TOUCH (8 files)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  src/main.js              Player, Health, dead code, constants
+  src/WeaponSystem.js      Hit window constants, null checks
+  src/HitEffects.js        JSDoc only
+  src/MinimapRenderer.js   Null checks, JSDoc
+  src/DungeonBuilder.js    Null checks only
+  src/AudioManager.js      Log cleanup
+  src/TextureManager.js    Log cleanup
+  src/ItemManager.js       Log cleanup
+
+✅ 5-POINT VERIFICATION (After Each Fix)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Does it still compile?    (No syntax errors)
+  2. Does the game load?        (No runtime crashes)
+  3. Can I move the player?     (WASD works)
+  4. Can I attack?              (Space works)
+  5. Any new console errors?    (Check dev console)
+
+⏱️ TIME ESTIMATES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Quick Wins (Top 10)      30 minutes
+  Tier 1 (Constants)       30 minutes
+  Tier 2 (Null Safety)     45 minutes
+  Tier 3 (Console)         20 minutes
+  Tier 4 (Dead Code)       15 minutes
+  Tier 5 (Documentation)   60 minutes
+  ────────────────────────────────────
+  TOTAL (All 20)           3-4 hours
+
+📊 EXPECTED IMPACT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Magic Numbers:    14 → 6     (57% reduction)
+  Dead Code:        50 → 0     (100% removal)
+  Debug Logs:       8 → 0      (100% cleanup)
+  Null Guards:      0 → 8      (8 new checks)
+  Documented:       0 → 4      (4 classes)
+
+🏆 TOP 10 QUICK WINS (30 minutes total)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  1. Remove shadow code (2 min)
+  2. Remove decorations (2 min)
+  3. Remove atmospheric (2 min)
+  4. Eye height constant (3 min)
+  5. Hit window constants (3 min)
+  6. Audio log cleanup (3 min)
+  7. Texture log cleanup (3 min)
+  8. Attack cooldown (5 min)
+  9. Weapon null check (5 min)
+  10. Enemy validation (5 min)
+
+🚫 RED FLAGS (Stop Immediately If You See)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  ❌ Error in console after your change
+  ❌ Game doesn't load
+  ❌ Movement feels different
+  ❌ Combat doesn't work
+  ❌ Grep shows >5 files using this constant
+  ❌ DEBUG-FINDINGS mentions as P0/P1
+  ❌ You're not 100% sure it's safe
+  
+  → Action: git checkout . and move on
+
+💡 COMMIT MESSAGES
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Option A: One big commit (all 20 fixes)
+  Option B: Five commits (one per tier)
+  Option C: Ten commits (quick wins individually)
+
+  See AGENT_4_SUMMARY.md for template commit messages
+
+🎓 THE AGENT 4 PHILOSOPHY
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  "I don't fix game-breaking bugs.
+   I don't optimize the render loop.
+   I don't refactor the architecture.
+   
+   I extract magic numbers.
+   I add null checks.
+   I write docs.
+   I clean dead code.
+   
+   I'm not the hero. I'm the janitor.
+   And that's exactly what this codebase needs."
+
+  Steady, safe, unsexy wins.
+  The boring work is the important work.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Generated: 2025-11-09 | Total Issues: 86 | Agent 4 Targets: 20 | Risk: ZERO
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

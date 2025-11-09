@@ -2,6 +2,8 @@
 import * as THREE from 'three';
 import { POIType } from './DungeonGenerator.js';
 import { TextureManager } from './TextureManager.js';
+import { PaintingGallery } from './PaintingGallery.js';
+import { Painting } from './Painting.js';
 
 export class DungeonBuilder {
     constructor(scene, dungeonData, config = {}) {
@@ -20,6 +22,10 @@ export class DungeonBuilder {
 
         this.meshes = [];
         this.torches = [];
+        this.paintings = []; // Store painting instances
+
+        // Painting gallery
+        this.paintingGallery = config.paintingGallery || null;
 
         // Texture management
         this.textureManager = config.textureManager || new TextureManager();
@@ -59,9 +65,15 @@ export class DungeonBuilder {
         this.placeTorches();
         this.placePOIDecorations();
 
+        // Place paintings after walls are created
+        if (this.paintingGallery) {
+            await this.placePaintings();
+        }
+
         return {
             meshes: this.meshes,
-            torches: this.torches
+            torches: this.torches,
+            paintings: this.paintings
         };
     }
 
@@ -615,5 +627,233 @@ export class DungeonBuilder {
                 }
             }
         }
+    }
+
+    /**
+     * Place paintings on suitable wall segments
+     */
+    async placePaintings() {
+        console.log('Placing paintings on dungeon walls...');
+
+        const suitableWalls = this.findSuitableWalls();
+        console.log(`Found ${suitableWalls.length} suitable wall segments`);
+
+        // Determine how many paintings to place (20-30% of suitable walls)
+        const paintingCount = Math.floor(suitableWalls.length * (0.20 + Math.random() * 0.10));
+        console.log(`Placing ${paintingCount} paintings`);
+
+        // Shuffle walls for random placement
+        const shuffledWalls = suitableWalls.sort(() => Math.random() - 0.5);
+
+        for (let i = 0; i < paintingCount && i < shuffledWalls.length; i++) {
+            const wallSegment = shuffledWalls[i];
+            await this.placePainting(wallSegment);
+        }
+
+        console.log(`Placed ${this.paintings.length} paintings successfully`);
+    }
+
+    /**
+     * Find suitable wall segments for painting placement
+     */
+    findSuitableWalls() {
+        const walls = [];
+
+        for (let y = 0; y < this.dungeonData.height; y++) {
+            for (let x = 0; x < this.dungeonData.width; x++) {
+                if (this.dungeonData.grid[y][x] === 1) {
+                    // Check each direction for walls
+                    this.checkWallForPainting(x, y, 'north', walls);
+                    this.checkWallForPainting(x, y, 'south', walls);
+                    this.checkWallForPainting(x, y, 'west', walls);
+                    this.checkWallForPainting(x, y, 'east', walls);
+                }
+            }
+        }
+
+        return walls;
+    }
+
+    /**
+     * Check if a wall segment is suitable for painting
+     */
+    checkWallForPainting(x, y, direction, walls) {
+        let checkX = x;
+        let checkY = y;
+
+        // Get adjacent cell based on direction
+        switch (direction) {
+            case 'north': checkY--; break;
+            case 'south': checkY++; break;
+            case 'west': checkX--; break;
+            case 'east': checkX++; break;
+        }
+
+        // Check if adjacent cell is a wall
+        const isWall = checkY < 0 || checkY >= this.dungeonData.height ||
+                       checkX < 0 || checkX >= this.dungeonData.width ||
+                       this.dungeonData.grid[checkY][checkX] === 0;
+
+        if (!isWall) return;
+
+        // Check if wall is wide enough (at least 2 cells)
+        if (!this.isWallWideEnough(x, y, direction)) return;
+
+        // Check if not a corner
+        if (this.isCorner(x, y)) return;
+
+        // Check if interior wall (not exterior edge)
+        if (!this.isInteriorWall(x, y)) return;
+
+        walls.push({
+            x,
+            y,
+            direction,
+            position: this.getWallCenterPosition(x, y, direction),
+            normal: this.getWallNormal(direction)
+        });
+    }
+
+    /**
+     * Check if wall segment is wide enough
+     */
+    isWallWideEnough(x, y, direction) {
+        // For now, just check if there's space on either side
+        // More sophisticated check would look for continuous wall segments
+        return true; // Simplified for initial implementation
+    }
+
+    /**
+     * Check if position is a corner
+     */
+    isCorner(x, y) {
+        let wallCount = 0;
+
+        // Count adjacent walls
+        const directions = [
+            { dx: 0, dy: -1 }, // north
+            { dx: 0, dy: 1 },  // south
+            { dx: -1, dy: 0 }, // west
+            { dx: 1, dy: 0 }   // east
+        ];
+
+        for (const dir of directions) {
+            const checkX = x + dir.dx;
+            const checkY = y + dir.dy;
+
+            const isWall = checkY < 0 || checkY >= this.dungeonData.height ||
+                          checkX < 0 || checkX >= this.dungeonData.width ||
+                          this.dungeonData.grid[checkY][checkX] === 0;
+
+            if (isWall) wallCount++;
+        }
+
+        // Corner if 2 or more adjacent cells are walls
+        return wallCount >= 2;
+    }
+
+    /**
+     * Check if wall is interior (not on dungeon edge)
+     */
+    isInteriorWall(x, y) {
+        const margin = 2;
+        return x >= margin && x < this.dungeonData.width - margin &&
+               y >= margin && y < this.dungeonData.height - margin;
+    }
+
+    /**
+     * Get world position for wall center
+     */
+    getWallCenterPosition(x, y, direction) {
+        let wallX = x * this.config.cellSize;
+        let wallZ = y * this.config.cellSize;
+        const wallY = this.config.wallHeight * 0.5; // Center height on wall
+
+        switch (direction) {
+            case 'north':
+                wallZ -= this.config.cellSize / 2;
+                break;
+            case 'south':
+                wallZ += this.config.cellSize / 2;
+                break;
+            case 'west':
+                wallX -= this.config.cellSize / 2;
+                break;
+            case 'east':
+                wallX += this.config.cellSize / 2;
+                break;
+        }
+
+        return new THREE.Vector3(wallX, wallY, wallZ);
+    }
+
+    /**
+     * Get wall normal vector
+     */
+    getWallNormal(direction) {
+        switch (direction) {
+            case 'north': return new THREE.Vector3(0, 0, 1);
+            case 'south': return new THREE.Vector3(0, 0, -1);
+            case 'west': return new THREE.Vector3(1, 0, 0);
+            case 'east': return new THREE.Vector3(-1, 0, 0);
+            default: return new THREE.Vector3(0, 0, 1);
+        }
+    }
+
+    /**
+     * Place a single painting on a wall
+     */
+    async placePainting(wallSegment) {
+        // Choose painting category (60% portraits, 30% landscapes, 10% creatures)
+        const rand = Math.random();
+        let category;
+        if (rand < 0.6) {
+            category = 'portraits';
+        } else if (rand < 0.9) {
+            category = 'landscapes';
+        } else {
+            category = 'creatures';
+        }
+
+        // Choose frame style (40% simple, 30% rustic, 20% ornate, 10% gothic)
+        const frameRand = Math.random();
+        let frameStyle;
+        if (frameRand < 0.4) {
+            frameStyle = 'simple';
+        } else if (frameRand < 0.7) {
+            frameStyle = 'rustic';
+        } else if (frameRand < 0.9) {
+            frameStyle = 'ornate';
+        } else {
+            frameStyle = 'gothic';
+        }
+
+        // Get painting data from gallery
+        const paintingData = this.paintingGallery.getRandomPainting(category);
+
+        // Add size and procedural texture data
+        const sizeVariation = 0.8 + Math.random() * 0.4; // 0.8 to 1.2
+        paintingData.width = 1.0 * sizeVariation;
+        paintingData.height = 1.2 * sizeVariation;
+
+        // Generate procedurally texture
+        const texture = this.paintingGallery.generatePaintingTexture(paintingData, 256, 256);
+
+        // Create painting instance with procedural texture
+        const painting = new Painting(paintingData, frameStyle);
+        painting.texture = texture;
+
+        // Create canvas and frame without loading from file
+        painting.createCanvas();
+        painting.createFrame(frameStyle);
+        painting.isLoaded = true;
+
+        // Place on wall
+        painting.placeOnWall(wallSegment.position, wallSegment.normal, 0.05);
+
+        // Add to scene
+        this.scene.add(painting.group);
+        this.meshes.push(painting.group);
+        this.paintings.push(painting);
     }
 }

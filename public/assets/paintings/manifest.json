@@ -1,0 +1,1150 @@
+{
+  "paintings": [
+    {
+      "id": "portrait_adelaide_hanscom1",
+      "path": "portraits/adelaide_hanscom1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_alessandro_allori1",
+      "path": "portraits/alessandro_allori1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_alessandro_allori2",
+      "path": "portraits/alessandro_allori2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_alexandre_cabanel1",
+      "path": "portraits/alexandre_cabanel1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_alexei_harlamov1",
+      "path": "portraits/alexei_harlamov1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_alexey_petrovich_antropov1",
+      "path": "portraits/alexey_petrovich_antropov1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_alice_pike_barney1",
+      "path": "portraits/alice_pike_barney1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_aman_theodor1",
+      "path": "portraits/aman_theodor1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_antonello_messina1",
+      "path": "portraits/antonello_messina1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_antonio_herrera_toro1",
+      "path": "portraits/antonio_herrera_toro1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_benjamin-constant1",
+      "path": "portraits/benjamin-constant1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_benoist_marie-guillemine1",
+      "path": "portraits/benoist_marie-guillemine1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_bouguereau_william-adolphe1",
+      "path": "portraits/bouguereau_william-adolphe1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_byron1",
+      "path": "portraits/byron1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_carl_fredric_breda1",
+      "path": "portraits/carl_fredric_breda1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_carl_fredric_breda2",
+      "path": "portraits/carl_fredric_breda2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_cramacj_lucas1",
+      "path": "portraits/cramacj_lucas1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_cranach_lucas2",
+      "path": "portraits/cranach_lucas2.png",
+      "category": "portrait",
+      "dimensions": "896x896",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_cristobal_rojas1",
+      "path": "portraits/cristobal_rojas1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_delacroix_eugene_ferdinand_victor1",
+      "path": "portraits/delacroix_eugene_ferdinand_victor1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_domenikos_theotokopoulos1",
+      "path": "portraits/domenikos_theotokopoulos1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_edmund_blair_leighton1",
+      "path": "portraits/edmund_blair_leighton1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_edmund_blair_leighton2",
+      "path": "portraits/edmund_blair_leighton2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_edwin_longsden_long1",
+      "path": "portraits/edwin_longsden_long1.png",
+      "category": "portrait",
+      "dimensions": "236x236",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_falero_luis_ricardo1",
+      "path": "portraits/falero_luis_ricardo1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_felix_bonfils1",
+      "path": "portraits/felix_bonfils1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_francesco_hayez1",
+      "path": "portraits/francesco_hayez1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_francisco_goya_lucientes1",
+      "path": "portraits/francisco_goya_lucientes1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_francisco_goya_lucientes2",
+      "path": "portraits/francisco_goya_lucientes2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_francisco_zurbaran1",
+      "path": "portraits/francisco_zurbaran1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_franz_von_defregger1",
+      "path": "portraits/franz_von_defregger1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_franz_von_defregger2",
+      "path": "portraits/franz_von_defregger2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_franz_von_defregger3",
+      "path": "portraits/franz_von_defregger3.png",
+      "category": "portrait",
+      "dimensions": "208x208",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_frederic_westin1",
+      "path": "portraits/frederic_westin1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_frederic_yates1",
+      "path": "portraits/frederic_yates1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_frederick_leighton1",
+      "path": "portraits/frederick_leighton1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_gaston_bussiere1",
+      "path": "portraits/gaston_bussiere1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_george_henry_hall1",
+      "path": "portraits/george_henry_hall1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_giovanni_battista_tiepolo1",
+      "path": "portraits/giovanni_battista_tiepolo1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_giovanni_bellini1",
+      "path": "portraits/giovanni_bellini1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_hans_holbein1",
+      "path": "portraits/hans_holbein1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_hayez_francesco1",
+      "path": "portraits/hayez_francesco1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_henryk_siemiradzki1",
+      "path": "portraits/henryk_siemiradzki1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_ilja_jefimowitsch_repin1",
+      "path": "portraits/ilja_jefimowitsch_repin1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_james_carrol_beckwith1",
+      "path": "portraits/james_carrol_beckwith1.png",
+      "category": "portrait",
+      "dimensions": "373x373",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_jean-baptiste-camille_corot1",
+      "path": "portraits/jean-baptiste-camille_corot1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_jean-baptiste-camille_corot2",
+      "path": "portraits/jean-baptiste-camille_corot2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_jean-leon_gerome1",
+      "path": "portraits/jean-leon_gerome1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_jean-leon_gerome2",
+      "path": "portraits/jean-leon_gerome2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_jean-leon_gerome3",
+      "path": "portraits/jean-leon_gerome3.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_jean-leon_gerome4",
+      "path": "portraits/jean-leon_gerome4.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_john_william_godward1",
+      "path": "portraits/john_william_godward1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_john_william_godward2",
+      "path": "portraits/john_william_godward2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_john_william_godward3",
+      "path": "portraits/john_william_godward3.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_julije_klovic1",
+      "path": "portraits/julije_klovic1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_juriaen_streek1",
+      "path": "portraits/juriaen_streek1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_kiprenskij_orest_adamovic1",
+      "path": "portraits/kiprenskij_orest_adamovic1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_konstantin_makovsky1",
+      "path": "portraits/konstantin_makovsky1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_lefebvre_jules_joseph1",
+      "path": "portraits/lefebvre_jules_joseph1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_leon-francois_comerre1",
+      "path": "portraits/leon-francois_comerre1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_leopold_loffler1",
+      "path": "portraits/leopold_loffler1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_lewis_john_frederick1",
+      "path": "portraits/lewis_john_frederick1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_madrazo_garreta_raimundo1",
+      "path": "portraits/madrazo_garreta_raimundo1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_marie_bashkirtseff1",
+      "path": "portraits/marie_bashkirtseff1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_moritz_kellerhoven1",
+      "path": "portraits/moritz_kellerhoven1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_nathaniel_jocelyn1",
+      "path": "portraits/nathaniel_jocelyn1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_nikolai_alexandrowitsch_jaroschenko1",
+      "path": "portraits/nikolai_alexandrowitsch_jaroschenko1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_nils_johan_olsson_blommer1",
+      "path": "portraits/nils_johan_olsson_blommer1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_paolo_veronese1",
+      "path": "portraits/paolo_veronese1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_parmigianino1",
+      "path": "portraits/parmigianino1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_paul_cesar_helleu1",
+      "path": "portraits/paul_cesar_helleu1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_regnault_henri1",
+      "path": "portraits/regnault_henri1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_richard_bergh1",
+      "path": "portraits/richard_bergh1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_richard_bergh2",
+      "path": "portraits/richard_bergh2.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_robert_dampier1",
+      "path": "portraits/robert_dampier1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_robert_lefevre1",
+      "path": "portraits/robert_lefevre1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_robert_leopold1",
+      "path": "portraits/robert_leopold1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_sichel_nathanael1",
+      "path": "portraits/sichel_nathanael1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_svetoslav_roerich1",
+      "path": "portraits/svetoslav_roerich1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_velazquez_diego1",
+      "path": "portraits/velazquez_diego1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_viktor_vasnetsov1",
+      "path": "portraits/viktor_vasnetsov1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "portrait_william-adolphe_bouguereau1",
+      "path": "portraits/william-adolphe_bouguereau1.png",
+      "category": "portrait",
+      "dimensions": "200x200",
+      "style": "classical",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-01",
+      "path": "landscapes/painting-01.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-02",
+      "path": "landscapes/painting-02.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-03",
+      "path": "landscapes/painting-03.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-04",
+      "path": "landscapes/painting-04.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-05",
+      "path": "landscapes/painting-05.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-12",
+      "path": "landscapes/painting-12.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-13",
+      "path": "landscapes/painting-13.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-14",
+      "path": "landscapes/painting-14.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-15",
+      "path": "landscapes/painting-15.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-16",
+      "path": "landscapes/painting-16.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-17",
+      "path": "landscapes/painting-17.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-19",
+      "path": "landscapes/painting-19.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-20",
+      "path": "landscapes/painting-20.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-21",
+      "path": "landscapes/painting-21.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-22",
+      "path": "landscapes/painting-22.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-23",
+      "path": "landscapes/painting-23.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-24",
+      "path": "landscapes/painting-24.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-25",
+      "path": "landscapes/painting-25.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-27",
+      "path": "landscapes/painting-27.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-28",
+      "path": "landscapes/painting-28.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-29",
+      "path": "landscapes/painting-29.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-31",
+      "path": "landscapes/painting-31.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-32",
+      "path": "landscapes/painting-32.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-33",
+      "path": "landscapes/painting-33.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-34",
+      "path": "landscapes/painting-34.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-35",
+      "path": "landscapes/painting-35.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-36",
+      "path": "landscapes/painting-36.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-37",
+      "path": "landscapes/painting-37.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-38",
+      "path": "landscapes/painting-38.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_painting-39",
+      "path": "landscapes/painting-39.jpg",
+      "category": "landscape",
+      "dimensions": "512x512",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_Backgroundsdragonsruins_hangar_render",
+      "path": "landscapes/Backgroundsdragonsruins_hangar_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_dragonruins_coliseum_render",
+      "path": "landscapes/dragonruins_coliseum_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_dragonruins_podium_render_frame_a",
+      "path": "landscapes/dragonruins_podium_render_frame_a.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_dragonruins_podium_render_frame_b",
+      "path": "landscapes/dragonruins_podium_render_frame_b.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_dragonsruins_atrium_render",
+      "path": "landscapes/dragonsruins_atrium_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_dragonsruins_labyrinth_render",
+      "path": "landscapes/dragonsruins_labyrinth_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_dragonsruins_ribcage_render",
+      "path": "landscapes/dragonsruins_ribcage_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_beautypath_render",
+      "path": "landscapes/mountain_beautypath_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_blacksmithhouse_render",
+      "path": "landscapes/mountain_blacksmithhouse_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_bridge_render_frame_a",
+      "path": "landscapes/mountain_bridge_render_frame_a.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_bridge_render_frame_b",
+      "path": "landscapes/mountain_bridge_render_frame_b.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_cathedralfacade_render",
+      "path": "landscapes/mountain_cathedralfacade_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_cathedralinterior_render",
+      "path": "landscapes/mountain_cathedralinterior_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_downpath_render",
+      "path": "landscapes/mountain_downpath_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_innhouse_render",
+      "path": "landscapes/mountain_innhouse_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_lake_render_frame_a",
+      "path": "landscapes/mountain_lake_render_frame_a.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_lake_render_frame_b",
+      "path": "landscapes/mountain_lake_render_frame_b.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_mountain_village_render",
+      "path": "landscapes/mountain_village_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "ps1_rpg",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_copse_render",
+      "path": "landscapes/plains_copse_render.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_field_render_frame_a",
+      "path": "landscapes/plains_field_render_frame_a.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_field_render_frame_b",
+      "path": "landscapes/plains_field_render_frame_b.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_field_render_frame_c",
+      "path": "landscapes/plains_field_render_frame_c.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_field_render_frame_d",
+      "path": "landscapes/plains_field_render_frame_d.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_field_render_frame_e",
+      "path": "landscapes/plains_field_render_frame_e.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_field_render_frame_f",
+      "path": "landscapes/plains_field_render_frame_f.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_fork_render_frame_a",
+      "path": "landscapes/plains_fork_render_frame_a.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_fork_render_frame_b",
+      "path": "landscapes/plains_fork_render_frame_b.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_plains_fork_render_frame_c",
+      "path": "landscapes/plains_fork_render_frame_c.png",
+      "category": "landscape",
+      "dimensions": "512x288",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_rpg_background",
+      "path": "landscapes/rpg_background.png",
+      "category": "landscape",
+      "dimensions": "2048x1280",
+      "style": "medieval",
+      "license": "CC0"
+    },
+    {
+      "id": "landscape_castleinthedark",
+      "path": "landscapes/castleinthedark.gif",
+      "category": "landscape",
+      "dimensions": "124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124124x124",
+      "style": "fantasy",
+      "license": "CC0"
+    }
+  ],
+  "metadata": {
+    "total_count": 142,
+    "portrait_count": 82,
+    "landscape_count": 60,
+    "sources": [
+      {"name": "30 Medieval Paintings Pack", "url": "https://opengameart.org/content/30-public-domain-paintings"},
+      {"name": "PS1 RPG Backgrounds", "url": "https://opengameart.org/content/ps1-pre-rendered-backgrounds"},
+      {"name": "Public Domain Portraits", "url": "https://opengameart.org/content/pd-200x200-portraits"}
+    ]
+  }
+}

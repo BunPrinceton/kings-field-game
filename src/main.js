@@ -3,6 +3,7 @@ import { DungeonGenerator } from './DungeonGenerator.js';
 import { DungeonBuilder } from './DungeonBuilder.js';
 import { AtmosphericLighting } from './AtmosphericLighting.js';
 import { WeaponSystem } from './WeaponSystem.js';
+import { ArmorSystem } from './ArmorSystem.js';
 import { HitEffects } from './HitEffects.js';
 import { DecorationsManager } from './DecorationsManager.js';
 import { AtmosphericDetails } from './AtmosphericDetails.js';
@@ -10,6 +11,8 @@ import { AudioManager } from './AudioManager.js';
 import { SOUND_CONFIG } from './SoundConfig.js';
 import { MinimapRenderer } from './MinimapRenderer.js';
 import { ViewmodelRenderer } from './ViewmodelRenderer.js';
+import { ItemManager, Inventory } from './ItemManager.js';
+import { Sword } from './Sword.js';
 
 // Health system class
 class Health {
@@ -48,6 +51,9 @@ class Player {
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.attackCooldownMax = 500; // milliseconds
+
+        // Armor system
+        this.armorSystem = new ArmorSystem(scene);
     }
 
     attack(enemies, weaponStats) {
@@ -86,9 +92,45 @@ class Player {
         return closestEnemy;
     }
 
+    takeDamage(amount, damageType = 'physical') {
+        // Calculate damage after armor reduction
+        const damageResult = this.armorSystem.calculateDamageReduction(amount, damageType);
+        const finalDamage = damageResult.damage;
+
+        // Apply damage to health
+        const isDead = this.health.takeDamage(finalDamage);
+
+        // Damage armor durability
+        if (amount > 0) {
+            this.armorSystem.damageArmor(Math.max(1, Math.floor(amount / 10)));
+        }
+
+        return {
+            isDead,
+            damageDealt: finalDamage,
+            blocked: damageResult.blocked,
+            damageReduced: amount - finalDamage
+        };
+    }
+
+    getMovementSpeed() {
+        // Get base movement speed modified by armor
+        return this.armorSystem.speedModifier;
+    }
+
+    getStaminaModifier() {
+        // Get stamina drain modifier from armor
+        return this.armorSystem.staminaModifier;
+    }
+
     update(deltaTime) {
         if (this.attackCooldown > 0) {
             this.attackCooldown = Math.max(0, this.attackCooldown - deltaTime);
+        }
+
+        // Update armor system
+        if (this.armorSystem) {
+            this.armorSystem.update(deltaTime);
         }
     }
 }
@@ -99,6 +141,9 @@ class Enemy {
         this.scene = scene;
         this.health = new Health(50);
         this.attackPower = 10;
+        this.attackRange = 2.0;
+        this.attackCooldown = 0;
+        this.attackCooldownMax = 2000; // milliseconds
 
         // Create enemy mesh (red sphere)
         const geometry = new THREE.SphereGeometry(0.5, 16, 16);
@@ -113,6 +158,25 @@ class Enemy {
         // Store original color for damage flash
         this.originalColor = 0xff0000;
         this.damageFlashDuration = 0;
+    }
+
+    canAttack() {
+        return this.attackCooldown <= 0 && !this.isDead();
+    }
+
+    tryAttackPlayer(player) {
+        if (!this.canAttack()) return false;
+
+        // Check if player is in range
+        const playerPos = new THREE.Vector3(player.position.x, player.position.y, player.position.z);
+        const enemyPos = this.mesh.position;
+        const distance = playerPos.distanceTo(enemyPos);
+
+        if (distance > this.attackRange) return false;
+
+        // Attack the player
+        this.attackCooldown = this.attackCooldownMax;
+        return true;
     }
 
     takeDamage(amount) {
@@ -160,6 +224,10 @@ class Enemy {
                 this.mesh.material.color.setHex(this.originalColor);
             }
         }
+
+        if (this.attackCooldown > 0) {
+            this.attackCooldown = Math.max(0, this.attackCooldown - deltaTime);
+        }
     }
 
     isDead() {
@@ -174,7 +242,10 @@ const game = {
     renderer: null,
     player: null, // Will be Player class instance
     weaponSystem: null, // Weapon system instance
+    armorSystem: null, // Reference to player's armor system
     hitEffects: null, // Hit effects system
+    itemManager: null, // Item system manager
+    inventory: null, // Player inventory
     gridSize: 1, // Size of each grid cell (kept for compatibility with dungeon system)
     // Real-time movement state
     movement: {
@@ -367,7 +438,7 @@ function setupInput() {
             game.movement.isSprinting = true;
         }
 
-        // Handle weapon switching (1-4 keys)
+        // Handle weapon switching (1-4 keys for default weapons, 5-9 for inventory swords)
         if (game.weaponSystem) {
             const weaponMap = {
                 '1': 'sword',
@@ -380,6 +451,95 @@ function setupInput() {
                 game.weaponSystem.switchWeapon(weaponMap[e.key]);
                 updateUI();
             }
+
+            // Equip swords from inventory (5-9 keys)
+            if (e.key >= '5' && e.key <= '9' && game.inventory) {
+                const slotIndex = parseInt(e.key) - 5;
+                const slot = game.inventory.getSlot(slotIndex);
+
+                if (slot && slot.item instanceof Sword) {
+                    const equipped = game.weaponSystem.equipSwordItem(slot.item);
+                    if (equipped) {
+                        console.log(`Equipped ${slot.item.name} from inventory slot ${slotIndex}`);
+                        updateUI();
+                    }
+                } else if (slot) {
+                    console.log(`Slot ${slotIndex} does not contain a sword`);
+                } else {
+                    console.log(`Inventory slot ${slotIndex} is empty`);
+                }
+            }
+        }
+
+        // Handle armor switching (F1-F4 for armor, F5-F8 for helmets, F9-F12 for shields)
+        if (game.armorSystem) {
+            // Armor sets (F1-F4)
+            const armorMap = {
+                'F1': 'none',
+                'F2': 'leather',
+                'F3': 'chainmail',
+                'F4': 'plate'
+            };
+
+            // Helmets (F5-F8)
+            const helmetMap = {
+                'F5': 'none',
+                'F6': 'leatherCap',
+                'F7': 'ironHelmet',
+                'F8': 'knightHelmet'
+            };
+
+            // Shields (F9-F12)
+            const shieldMap = {
+                'F9': 'none',
+                'F10': 'woodenShield',
+                'F11': 'ironShield',
+                'F12': 'towerShield'
+            };
+
+            if (armorMap[e.key]) {
+                game.armorSystem.equipArmor(armorMap[e.key]);
+                updateUI();
+                if (game.audioInitialized) {
+                    console.log(`Equipped ${armorMap[e.key]} armor`);
+                }
+            }
+
+            if (helmetMap[e.key]) {
+                game.armorSystem.equipHelmet(helmetMap[e.key]);
+                updateUI();
+                console.log(`Equipped ${helmetMap[e.key]} helmet`);
+            }
+
+            if (shieldMap[e.key]) {
+                game.armorSystem.equipShield(shieldMap[e.key]);
+                updateUI();
+                console.log(`Equipped ${shieldMap[e.key]} shield`);
+            }
+        }
+
+        // Test armor - T key deals damage to player to test armor
+        if (e.key.toLowerCase() === 't' && game.player) {
+            const testDamage = 20;
+            const damageResult = game.player.takeDamage(testDamage, 'physical');
+            console.log(`TEST DAMAGE: ${testDamage} -> ${damageResult.damageDealt.toFixed(1)} (Reduced: ${damageResult.damageReduced.toFixed(1)}) ${damageResult.blocked ? '[BLOCKED]' : ''}`);
+            updateUI();
+        }
+
+        // Heal player - H key
+        if (e.key.toLowerCase() === 'h' && game.player) {
+            game.player.health.heal(30);
+            console.log('Healed 30 HP');
+            updateUI();
+        }
+
+        // Repair armor - R key
+        if (e.key.toLowerCase() === 'r' && game.armorSystem) {
+            game.armorSystem.repairArmor('armor', 100);
+            game.armorSystem.repairArmor('helmet', 100);
+            game.armorSystem.repairArmor('shield', 100);
+            console.log('Armor fully repaired');
+            updateUI();
         }
 
         // Track key states
@@ -556,8 +716,13 @@ async function init() {
         1000
     );
 
+    // Initialize item system
+    game.itemManager = new ItemManager();
+    game.inventory = new Inventory(20);
+    console.log('Item system initialized');
+
     // Initialize weapon system
-    game.weaponSystem = new WeaponSystem(game.camera, game.scene);
+    game.weaponSystem = new WeaponSystem(game.camera, game.scene, game.itemManager);
 
     // Initialize hit effects
     game.hitEffects = new HitEffects(game.scene);
@@ -565,6 +730,24 @@ async function init() {
     // Initialize audio system
     game.audio = new AudioManager(game.camera);
     console.log('Audio system created (will initialize on first user interaction)');
+
+    // Create some starter swords and add to inventory
+    const startingSword = game.itemManager.createItem('short_sword');
+    if (startingSword) {
+        game.inventory.addItem(startingSword);
+        console.log('Added Short Sword to inventory');
+    }
+
+    // Create a few more swords for testing
+    const longSword = game.itemManager.createItem('long_sword');
+    const flameBlade = game.itemManager.createItem('flame_blade');
+    const frostFang = game.itemManager.createItem('frost_fang');
+
+    if (longSword) game.inventory.addItem(longSword);
+    if (flameBlade) game.inventory.addItem(flameBlade);
+    if (frostFang) game.inventory.addItem(frostFang);
+
+    console.log('Added additional swords to inventory for testing');
 
     // Renderer setup
     game.renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -648,6 +831,9 @@ async function init() {
 
     // Initialize player (now as Player class instance)
     game.player = new Player(game.scene);
+
+    // Link armor system reference for easier access
+    game.armorSystem = game.player.armorSystem;
 
     // Set player spawn position
     const spawnPos = game.dungeon.generator.getSpawnPosition();
@@ -741,10 +927,101 @@ function updateUI() {
     let weaponInfo = '';
     if (game.weaponSystem) {
         const stats = game.weaponSystem.getWeaponStats();
+        const currentItem = game.weaponSystem.getCurrentWeaponItem();
+
+        let durabilityInfo = '';
+        let extraInfo = '';
+
+        if (currentItem instanceof Sword) {
+            const durPercent = currentItem.getDurabilityPercent();
+            const durColor = durPercent > 50 ? '#0f0' : durPercent > 25 ? '#ff0' : '#f00';
+            durabilityInfo = `<span style="color: ${durColor}; margin-left: 5px;">[${currentItem.durability}/${currentItem.maxDurability}]</span>`;
+
+            if (currentItem.elementalDamage) {
+                extraInfo += ` | ${currentItem.elementalDamage.type}: ${currentItem.elementalDamage.amount}`;
+            }
+            if (currentItem.critChance > 0) {
+                extraInfo += ` | Crit: ${(currentItem.critChance * 100).toFixed(0)}%`;
+            }
+        }
+
         weaponInfo = `
             <div style="font-size: 12px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #666;">
-                <div style="color: #ffa500; margin-bottom: 3px;">${stats.name}</div>
-                <div style="font-size: 11px;">Damage: ${stats.damage} | Range: ${stats.range.toFixed(1)} | Speed: ${(1000/stats.attackSpeed).toFixed(1)}/s</div>
+                <div style="color: #ffa500; margin-bottom: 3px;">${stats.name}${durabilityInfo}</div>
+                <div style="font-size: 11px;">Damage: ${stats.damage} | Range: ${stats.range.toFixed(1)} | Speed: ${(1000/stats.attackSpeed).toFixed(1)}/s${extraInfo}</div>
+            </div>
+        `;
+    }
+
+    // Get inventory info
+    let inventoryInfo = '';
+    if (game.inventory) {
+        inventoryInfo = '<div style="font-size: 11px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #666;">';
+        inventoryInfo += '<div style="color: #aaffaa; margin-bottom: 3px;">INVENTORY (Press 5-9 to equip)</div>';
+
+        for (let i = 0; i < 5; i++) {
+            const slot = game.inventory.getSlot(i);
+            if (slot && slot.item instanceof Sword) {
+                const item = slot.item;
+                const rarityColor = {
+                    'common': '#aaa',
+                    'uncommon': '#5f5',
+                    'rare': '#55f',
+                    'legendary': '#fa0'
+                }[item.rarity] || '#fff';
+
+                inventoryInfo += `<div style="font-size: 10px;">
+                    [${i + 5}] <span style="color: ${rarityColor}">${item.name}</span> (Dmg: ${item.damage})
+                </div>`;
+            } else {
+                inventoryInfo += `<div style="font-size: 10px; color: #555;">[${i + 5}] Empty</div>`;
+            }
+        }
+
+        inventoryInfo += '</div>';
+    }
+
+    // Get armor stats if armor system is initialized
+    let armorInfo = '';
+    if (game.armorSystem) {
+        const equipment = game.armorSystem.getEquipmentSummary();
+        const durability = game.armorSystem.getDurabilityInfo();
+
+        // Color code durability
+        const armorDurColor = durability.armor.percentage > 50 ? '#0f0' : durability.armor.percentage > 25 ? '#ff0' : '#f00';
+        const helmetDurColor = durability.helmet.percentage > 50 ? '#0f0' : durability.helmet.percentage > 25 ? '#ff0' : '#f00';
+        const shieldDurColor = durability.shield.percentage > 50 ? '#0f0' : durability.shield.percentage > 25 ? '#ff0' : '#f00';
+
+        armorInfo = `
+            <div style="font-size: 12px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #888;">
+                <div style="color: #88aaff; margin-bottom: 5px; font-weight: bold;">ARMOR EQUIPMENT</div>
+
+                <div style="font-size: 11px; margin-bottom: 3px;">
+                    Body: <span style="color: #aaa;">${equipment.armor.stats.name}</span>
+                    ${equipment.armor.stats.defense > 0 ? `<span style="color: ${armorDurColor}; margin-left: 5px;">[${Math.ceil(durability.armor.current)}/${durability.armor.max}]</span>` : ''}
+                </div>
+
+                <div style="font-size: 11px; margin-bottom: 3px;">
+                    Head: <span style="color: #aaa;">${equipment.helmet.stats.name}</span>
+                    ${equipment.helmet.stats.defense > 0 ? `<span style="color: ${helmetDurColor}; margin-left: 5px;">[${Math.ceil(durability.helmet.current)}/${durability.helmet.max}]</span>` : ''}
+                </div>
+
+                <div style="font-size: 11px; margin-bottom: 5px;">
+                    Shield: <span style="color: #aaa;">${equipment.shield.stats.name}</span>
+                    ${equipment.shield.stats.defense > 0 ? `<span style="color: ${shieldDurColor}; margin-left: 5px;">[${Math.ceil(durability.shield.current)}/${durability.shield.max}]</span>` : ''}
+                </div>
+
+                <div style="font-size: 11px; border-top: 1px solid #555; padding-top: 3px; margin-top: 3px;">
+                    <div>Defense: <span style="color: #8f8;">${equipment.total.defense}</span> | Weight: <span style="color: ${equipment.total.weight > 10 ? '#f88' : '#aaa'}">${equipment.total.weight.toFixed(1)}</span></div>
+                    <div>Speed: <span style="color: ${equipment.total.speedModifier < 1 ? '#f88' : '#8f8'}">${(equipment.total.speedModifier * 100).toFixed(0)}%</span> | Block: <span style="color: #88f">${(equipment.total.blockChance * 100).toFixed(0)}%</span></div>
+                    <div style="font-size: 10px; margin-top: 2px;">
+                        Resist:
+                        Phys <span style="color: #aaa">${(equipment.total.resistances.physical * 100).toFixed(0)}%</span> |
+                        Fire <span style="color: #f88">${(equipment.total.resistances.fire * 100).toFixed(0)}%</span> |
+                        Ice <span style="color: #88f">${(equipment.total.resistances.ice * 100).toFixed(0)}%</span> |
+                        Ltng <span style="color: #ff8">${(equipment.total.resistances.lightning * 100).toFixed(0)}%</span>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -769,6 +1046,8 @@ function updateUI() {
                 <div style="background: ${healthColor}; width: ${healthPercent}%; height: 100%; transition: width 0.3s;"></div>
             </div>
             ${weaponInfo}
+            ${inventoryInfo}
+            ${armorInfo}
             <div style="font-size: 12px; opacity: 0.7; margin-top: 10px;">
                 Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
             </div>
@@ -776,7 +1055,13 @@ function updateUI() {
                 Mouse Look: ${mouseLockStatus}
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | SHIFT: Sprint | SPACE: Attack | 1-4: Weapons
+                WASD: Move | SHIFT: Sprint | SPACE: Attack | 1-4: Weapons | 5-9: Swords
+            </div>
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                F1-F4: Armor | F5-F8: Helmets | F9-F12: Shields
+            </div>
+            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
+                T: Test Damage | H: Heal | R: Repair Armor
             </div>
             <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
                 Audio: ${audioStatus}
@@ -831,10 +1116,29 @@ function update(deltaTime) {
     // Update player
     game.player.update(deltaTime);
 
-    // Update enemies
+    // Update enemies and handle enemy attacks
     for (const enemy of game.enemies) {
         if (!enemy.isDead()) {
             enemy.update(deltaTime);
+
+            // Enemy AI: Try to attack player if in range
+            if (enemy.tryAttackPlayer(game.player)) {
+                // Enemy attacks player
+                const damageResult = game.player.takeDamage(enemy.attackPower, 'physical');
+
+                console.log(`Enemy attacked! Raw: ${enemy.attackPower} -> Final: ${damageResult.damageDealt.toFixed(1)} (Reduced: ${damageResult.damageReduced.toFixed(1)}) ${damageResult.blocked ? '[BLOCKED]' : ''}`);
+
+                // Visual feedback for player damage
+                if (game.hitEffects) {
+                    game.hitEffects.triggerScreenShake(0.15, 0.08);
+                }
+
+                updateUI();
+
+                if (damageResult.isDead) {
+                    console.log('Player defeated!');
+                }
+            }
         }
     }
 
@@ -871,6 +1175,16 @@ function update(deltaTime) {
         if (game.weaponSystem.getAttackHitTiming()) {
             const weaponStats = game.weaponSystem.getWeaponStats();
             const dead = game.attackTarget.takeDamage(weaponStats.damage);
+
+            // Reduce weapon durability if it's a sword item
+            const currentItem = game.weaponSystem.getCurrentWeaponItem();
+            if (currentItem instanceof Sword) {
+                const broken = currentItem.reduceDurability(1);
+                if (broken) {
+                    console.log(`${currentItem.name} is broken! Switching to default sword.`);
+                    game.weaponSystem.switchWeapon('sword');
+                }
+            }
 
             // Create hit effects
             if (game.hitEffects) {

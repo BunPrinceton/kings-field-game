@@ -1,6 +1,7 @@
 import * as THREE from 'three';
+import { Sword } from './Sword.js';
 
-// Weapon types with their stats
+// Weapon types with their stats (kept for backward compatibility with axes, maces, daggers)
 const WEAPON_STATS = {
   sword: {
     name: 'Sword',
@@ -33,9 +34,10 @@ const WEAPON_STATS = {
 };
 
 export class WeaponSystem {
-  constructor(camera, scene) {
+  constructor(camera, scene, itemManager = null) {
     this.camera = camera;
     this.scene = scene;
+    this.itemManager = itemManager;
 
     // Weapon container (attached to camera for first-person view)
     this.weaponContainer = new THREE.Group();
@@ -54,6 +56,7 @@ export class WeaponSystem {
     this.weapons = {};
     this.currentWeapon = null;
     this.currentWeaponType = 'sword';
+    this.currentWeaponItem = null; // New: Sword item instance
 
     // Create all weapons
     this.createWeapons();
@@ -296,8 +299,59 @@ export class WeaponSystem {
     }
   }
 
+  /**
+   * Equip a sword item from the item system
+   */
+  equipSwordItem(swordItem) {
+    if (!(swordItem instanceof Sword)) {
+      console.error('Can only equip Sword items');
+      return false;
+    }
+
+    // Remove current weapon
+    if (this.currentWeapon) {
+      this.weaponContainer.remove(this.currentWeapon);
+      this.weaponContainer.remove(this.hands);
+    }
+
+    // Create mesh from sword item
+    this.currentWeapon = swordItem.createMesh();
+    this.currentWeaponType = 'sword';
+    this.currentWeaponItem = swordItem;
+
+    // Add to weapon container
+    this.weaponContainer.add(this.hands);
+    this.weaponContainer.add(this.currentWeapon);
+
+    return true;
+  }
+
+  /**
+   * Unequip current weapon
+   */
+  unequipWeapon() {
+    if (this.currentWeapon) {
+      this.weaponContainer.remove(this.currentWeapon);
+      this.weaponContainer.remove(this.hands);
+    }
+    this.currentWeapon = null;
+    this.currentWeaponItem = null;
+  }
+
   getWeaponStats() {
+    // If we have a sword item equipped, use its stats
+    if (this.currentWeaponItem instanceof Sword) {
+      return this.currentWeaponItem.getWeaponStats();
+    }
+    // Otherwise, use default stats
     return WEAPON_STATS[this.currentWeaponType];
+  }
+
+  /**
+   * Get the current weapon item
+   */
+  getCurrentWeaponItem() {
+    return this.currentWeaponItem;
   }
 
   startAttack() {

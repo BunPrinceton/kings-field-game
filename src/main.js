@@ -1247,8 +1247,8 @@ async function init() {
     // Scene setup
     game.scene = new THREE.Scene();
 
-    // Initialize player
-    game.player = new Player(game.scene);
+    // Player will be initialized after dungeon generation (line 1266)
+    // so that spawn position is available
 
     // Camera setup (first-person view)
     game.camera = new THREE.PerspectiveCamera(

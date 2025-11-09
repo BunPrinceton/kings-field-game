@@ -411,14 +411,18 @@ export class CleaningPropsManager {
     dispose() {
         this.instances.forEach(instance => {
             this.scene.remove(instance);
-            if (instance.geometry) instance.geometry.dispose();
-            if (instance.material) {
-                if (Array.isArray(instance.material)) {
-                    instance.material.forEach(mat => mat.dispose());
-                } else {
-                    instance.material.dispose();
+
+            // Recursively dispose of all children in group
+            instance.traverse((child) => {
+                if (child.geometry) child.geometry.dispose();
+                if (child.material) {
+                    if (Array.isArray(child.material)) {
+                        child.material.forEach(mat => mat.dispose());
+                    } else {
+                        child.material.dispose();
+                    }
                 }
-            }
+            });
         });
         this.instances = [];
         this.models.clear();

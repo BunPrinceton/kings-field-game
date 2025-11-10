@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kings Field - Painting Gallery Viewer</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #0f0f1e);
+            color: #f0f0f0;
+            margin: 0;
+            padding: 20px;
+        }
+
+        h1 {
+            text-align: center;
+            color: #ffa500;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            margin-bottom: 10px;
+        }
+
+        .controls {
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        .controls button {
+            background: #4a4a6a;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .controls button:hover {
+            background: #6a6a8a;
+            transform: scale(1.05);
+        }
+
+        .controls button.active {
+            background: #ffa500;
+            color: #000;
+        }
+
+        .gallery-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .painting-card {
+            background: rgba(0,0,0,0.4);
+            border: 2px solid #333;
+            border-radius: 10px;
+            padding: 15px;
+            transition: transform 0.3s, box-shadow 0.3s;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        .painting-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(255,165,0,0.3);
+            border-color: #ffa500;
+        }
+
+        .painting-frame {
+            position: relative;
+            border: 8px solid;
+            border-image: linear-gradient(45deg, #8B4513, #D2691E, #8B4513) 1;
+            padding: 5px;
+            background: #2a2a2a;
+            margin-bottom: 10px;
+        }
+
+        .painting-frame.ornate {
+            border-width: 12px;
+            border-image: linear-gradient(45deg, #FFD700, #B8860B, #FFD700) 1;
+        }
+
+        .painting-frame.rustic {
+            border-color: #654321;
+            border-style: ridge;
+        }
+
+        .painting-frame.gothic {
+            border-color: #1a1a1a;
+            border-style: double;
+            border-width: 10px;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 200px;
+            background: #1a1a1a;
+        }
+
+        .painting-info {
+            text-align: center;
+            padding: 10px;
+        }
+
+        .painting-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #ffa500;
+            margin-bottom: 5px;
+        }
+
+        .painting-category {
+            font-size: 12px;
+            color: #888;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .painting-id {
+            font-size: 10px;
+            color: #555;
+            font-family: monospace;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .stats {
+            text-align: center;
+            margin: 20px 0;
+            padding: 10px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 10px;
+        }
+
+        .legend {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 10px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🖼️ Kings Field Painting Gallery 🖼️</h1>
+
+    <div class="controls">
+        <button onclick="generateAll()" class="active">All Paintings</button>
+        <button onclick="filterCategory('portraits')">Portraits</button>
+        <button onclick="filterCategory('landscapes')">Landscapes</button>
+        <button onclick="filterCategory('creatures')">Creatures</button>
+        <button onclick="filterCategory('abstract')">Abstract</button>
+        <button onclick="regenerateAll()">🎲 Regenerate</button>
+    </div>
+
+    <div class="stats" id="stats">
+        <p>Total Paintings: <span id="paintingCount">0</span></p>
+        <div class="legend">
+            <div class="legend-item">
+                <div class="legend-color" style="background: #8B4513;"></div>
+                <span>Simple Frame</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #FFD700;"></div>
+                <span>Ornate Frame</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #654321;"></div>
+                <span>Rustic Frame</span>
+            </div>
+            <div class="legend-item">
+                <div class="legend-color" style="background: #1a1a1a;"></div>
+                <span>Gothic Frame</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="gallery-container" id="gallery"></div>
+
+    <script>
+        const paintingTitles = {
+            portraits: [
+                "The Lost King", "Knight of Shadows", "Ancient Sage", "Court Jester",
+                "The Alchemist", "Noble Lady", "Dark Prince", "Mystic Oracle",
+                "Castle Guard", "The Merchant", "Royal Advisor", "The Hermit"
+            ],
+            landscapes: [
+                "Moonless Valley", "Forgotten Castle", "Misty Mountains", "Dark Forest",
+                "Ancient Ruins", "Crystal Cave", "Haunted Marsh", "Starless Sky",
+                "Abandoned Tower", "Silent Lake", "Dead Gardens", "Stone Bridge"
+            ],
+            creatures: [
+                "Shadow Drake", "Stone Golem", "Cave Beast", "Night Stalker",
+                "Fire Demon", "Ice Wraith", "Swamp Thing", "Sky Serpent",
+                "Earth Elemental", "Void Walker", "Bone Dragon", "Crystal Spider"
+            ],
+            abstract: [
+                "Chaos Pattern", "Order's End", "Time Spiral", "Void Echo",
+                "Dream Fragment", "Memory Shard", "Soul Mirror", "Mind Maze",
+                "Reality Tear", "Dimension Rift", "Eternal Loop", "Broken Symmetry"
+            ]
+        };
+
+        function generatePaintingTexture(category, title, canvas) {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Generate unique color based on title
+            const titleHash = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+            const hue = (titleHash * 137) % 360;
+            const saturation = 30 + (titleHash % 40);
+            const lightness = 20 + (titleHash % 30);
+
+            // Background gradient
+            const gradient = ctx.createRadialGradient(width/2, height/2, 0, width/2, height/2, width/2);
+            gradient.addColorStop(0, `hsl(${hue}, ${saturation}%, ${lightness + 20}%)`);
+            gradient.addColorStop(1, `hsl(${hue}, ${saturation}%, ${lightness}%)`);
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, width, height);
+
+            // Add texture noise
+            ctx.globalAlpha = 0.15;
+            for (let i = 0; i < 1000; i++) {
+                const x = Math.random() * width;
+                const y = Math.random() * height;
+                const brightness = Math.random() * 100 + 100;
+                ctx.fillStyle = `rgb(${brightness}, ${brightness}, ${brightness})`;
+                ctx.fillRect(x, y, 1, 1);
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Category-specific artwork
+            if (category === 'portraits') {
+                drawPortrait(ctx, width, height, hue);
+            } else if (category === 'landscapes') {
+                drawLandscape(ctx, width, height, hue);
+            } else if (category === 'creatures') {
+                drawCreature(ctx, width, height, hue);
+            } else if (category === 'abstract') {
+                drawAbstract(ctx, width, height, hue);
+            }
+
+            // Add vignette
+            const vignette = ctx.createRadialGradient(width/2, height/2, width/4, width/2, height/2, width/2);
+            vignette.addColorStop(0, 'rgba(0,0,0,0)');
+            vignette.addColorStop(1, 'rgba(0,0,0,0.4)');
+            ctx.fillStyle = vignette;
+            ctx.fillRect(0, 0, width, height);
+
+            // Add aged effect
+            ctx.globalAlpha = 0.1;
+            ctx.fillStyle = '#8B7355';
+            ctx.fillRect(0, 0, width, height);
+            ctx.globalAlpha = 1.0;
+        }
+
+        function drawPortrait(ctx, width, height, hue) {
+            ctx.strokeStyle = `hsl(${hue}, 40%, 60%)`;
+            ctx.fillStyle = `hsl(${hue}, 30%, 40%)`;
+            ctx.lineWidth = 2;
+
+            // Head
+            ctx.beginPath();
+            ctx.arc(width/2, height/3, width/6, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.stroke();
+
+            // Body silhouette
+            ctx.beginPath();
+            ctx.moveTo(width/2 - width/5, height/2);
+            ctx.lineTo(width/2 - width/6, height * 0.9);
+            ctx.lineTo(width/2 + width/6, height * 0.9);
+            ctx.lineTo(width/2 + width/5, height/2);
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Eyes
+            ctx.fillStyle = `hsl(${hue}, 60%, 20%)`;
+            ctx.beginPath();
+            ctx.arc(width/2 - width/12, height/3 - height/20, width/30, 0, Math.PI * 2);
+            ctx.arc(width/2 + width/12, height/3 - height/20, width/30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Crown or hat detail
+            ctx.strokeStyle = `hsl(${hue + 60}, 60%, 50%)`;
+            ctx.beginPath();
+            ctx.moveTo(width/2 - width/8, height/3 - width/6);
+            ctx.lineTo(width/2, height/3 - width/4);
+            ctx.lineTo(width/2 + width/8, height/3 - width/6);
+            ctx.stroke();
+        }
+
+        function drawLandscape(ctx, width, height, hue) {
+            // Mountains
+            ctx.fillStyle = `hsl(${hue}, 20%, 30%)`;
+            ctx.beginPath();
+            ctx.moveTo(0, height * 0.7);
+            ctx.lineTo(width * 0.3, height * 0.4);
+            ctx.lineTo(width * 0.5, height * 0.5);
+            ctx.lineTo(width * 0.7, height * 0.3);
+            ctx.lineTo(width, height * 0.6);
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Second mountain layer
+            ctx.fillStyle = `hsl(${hue}, 25%, 25%)`;
+            ctx.beginPath();
+            ctx.moveTo(0, height * 0.8);
+            ctx.lineTo(width * 0.4, height * 0.6);
+            ctx.lineTo(width * 0.8, height * 0.65);
+            ctx.lineTo(width, height * 0.75);
+            ctx.lineTo(width, height);
+            ctx.lineTo(0, height);
+            ctx.closePath();
+            ctx.fill();
+
+            // Moon or sun
+            ctx.fillStyle = `hsl(${hue + 180}, 30%, 70%)`;
+            ctx.beginPath();
+            ctx.arc(width * 0.8, height * 0.2, width/10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Trees
+            for (let i = 0; i < 5; i++) {
+                const x = Math.random() * width;
+                const y = height * 0.7 + Math.random() * height * 0.2;
+                ctx.fillStyle = `hsl(${hue}, 40%, 15%)`;
+                ctx.fillRect(x - 2, y, 4, 20);
+                ctx.beginPath();
+                ctx.moveTo(x - 10, y);
+                ctx.lineTo(x, y - 15);
+                ctx.lineTo(x + 10, y);
+                ctx.closePath();
+                ctx.fill();
+            }
+        }
+
+        function drawCreature(ctx, width, height, hue) {
+            ctx.strokeStyle = `hsl(${hue}, 50%, 40%)`;
+            ctx.fillStyle = `hsl(${hue}, 40%, 25%)`;
+            ctx.lineWidth = 3;
+
+            // Body
+            ctx.beginPath();
+            ctx.moveTo(width/2, height * 0.2);
+
+            // Wings or arms
+            ctx.lineTo(width * 0.2, height * 0.4);
+            ctx.lineTo(width * 0.15, height * 0.5);
+            ctx.lineTo(width * 0.3, height * 0.5);
+
+            // Lower body
+            ctx.lineTo(width * 0.35, height * 0.8);
+            ctx.lineTo(width * 0.4, height * 0.9);
+            ctx.lineTo(width * 0.5, height * 0.85);
+            ctx.lineTo(width * 0.6, height * 0.9);
+            ctx.lineTo(width * 0.65, height * 0.8);
+
+            // Other wing/arm
+            ctx.lineTo(width * 0.7, height * 0.5);
+            ctx.lineTo(width * 0.85, height * 0.5);
+            ctx.lineTo(width * 0.8, height * 0.4);
+
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+
+            // Eyes
+            ctx.fillStyle = `hsl(${hue + 60}, 80%, 50%)`;
+            ctx.shadowColor = `hsl(${hue + 60}, 100%, 60%)`;
+            ctx.shadowBlur = 10;
+            ctx.beginPath();
+            ctx.arc(width/2 - width/10, height * 0.25, width/25, 0, Math.PI * 2);
+            ctx.arc(width/2 + width/10, height * 0.25, width/25, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Spikes or horns
+            ctx.strokeStyle = `hsl(${hue}, 60%, 50%)`;
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+                const x = width * (0.3 + i * 0.1);
+                ctx.moveTo(x, height * 0.15);
+                ctx.lineTo(x - 5, height * 0.05);
+                ctx.moveTo(x, height * 0.15);
+                ctx.lineTo(x + 5, height * 0.05);
+            }
+            ctx.stroke();
+        }
+
+        function drawAbstract(ctx, width, height, hue) {
+            // Geometric patterns
+            const centerX = width / 2;
+            const centerY = height / 2;
+
+            // Spiraling shapes
+            for (let i = 0; i < 20; i++) {
+                const angle = (i / 20) * Math.PI * 4;
+                const radius = (i / 20) * Math.min(width, height) / 2;
+                const x = centerX + Math.cos(angle) * radius;
+                const y = centerY + Math.sin(angle) * radius;
+
+                ctx.fillStyle = `hsla(${hue + i * 10}, 50%, 40%, 0.5)`;
+                ctx.beginPath();
+                ctx.arc(x, y, 10 - i/3, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // Interconnected lines
+            ctx.strokeStyle = `hsl(${hue + 90}, 40%, 50%)`;
+            ctx.lineWidth = 1;
+            ctx.globalAlpha = 0.5;
+
+            for (let i = 0; i < 8; i++) {
+                const angle1 = (i / 8) * Math.PI * 2;
+                const angle2 = ((i + 3) / 8) * Math.PI * 2;
+
+                ctx.beginPath();
+                ctx.moveTo(
+                    centerX + Math.cos(angle1) * width * 0.4,
+                    centerY + Math.sin(angle1) * height * 0.4
+                );
+                ctx.lineTo(
+                    centerX + Math.cos(angle2) * width * 0.4,
+                    centerY + Math.sin(angle2) * height * 0.4
+                );
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1.0;
+
+            // Central symbol
+            ctx.fillStyle = `hsl(${hue + 180}, 60%, 30%)`;
+            ctx.strokeStyle = `hsl(${hue + 180}, 70%, 50%)`;
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2;
+                const x = centerX + Math.cos(angle) * width * 0.15;
+                const y = centerY + Math.sin(angle) * height * 0.15;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.stroke();
+        }
+
+        function createPainting(category, title, frameStyle) {
+            const card = document.createElement('div');
+            card.className = 'painting-card';
+            card.dataset.category = category;
+
+            const frame = document.createElement('div');
+            frame.className = `painting-frame ${frameStyle}`;
+
+            const canvas = document.createElement('canvas');
+            canvas.width = 256;
+            canvas.height = 256;
+            generatePaintingTexture(category, title, canvas);
+
+            frame.appendChild(canvas);
+
+            const info = document.createElement('div');
+            info.className = 'painting-info';
+
+            const titleDiv = document.createElement('div');
+            titleDiv.className = 'painting-title';
+            titleDiv.textContent = title;
+
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'painting-category';
+            categoryDiv.textContent = category;
+
+            const idDiv = document.createElement('div');
+            idDiv.className = 'painting-id';
+            idDiv.textContent = `ID: ${category}_${Math.floor(Math.random() * 1000)}`;
+
+            info.appendChild(titleDiv);
+            info.appendChild(categoryDiv);
+            info.appendChild(idDiv);
+
+            card.appendChild(frame);
+            card.appendChild(info);
+
+            return card;
+        }
+
+        function generateAll() {
+            const gallery = document.getElementById('gallery');
+            gallery.innerHTML = '';
+
+            const frameStyles = ['simple', 'ornate', 'rustic', 'gothic'];
+            let paintingCount = 0;
+
+            Object.keys(paintingTitles).forEach(category => {
+                paintingTitles[category].forEach((title, index) => {
+                    const frameStyle = frameStyles[index % frameStyles.length];
+                    const painting = createPainting(category, title, frameStyle);
+                    gallery.appendChild(painting);
+                    paintingCount++;
+                });
+            });
+
+            document.getElementById('paintingCount').textContent = paintingCount;
+        }
+
+        function filterCategory(category) {
+            // Update active button
+            document.querySelectorAll('.controls button').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Filter paintings
+            const paintings = document.querySelectorAll('.painting-card');
+            paintings.forEach(painting => {
+                if (category === 'all' || painting.dataset.category === category) {
+                    painting.style.display = 'block';
+                } else {
+                    painting.style.display = 'none';
+                }
+            });
+
+            // Update count
+            const visibleCount = document.querySelectorAll('.painting-card:not([style*="display: none"])').length;
+            document.getElementById('paintingCount').textContent = visibleCount;
+        }
+
+        function regenerateAll() {
+            generateAll();
+        }
+
+        // Generate all paintings on load
+        window.onload = generateAll;
+    </script>
+</body>
+</html>

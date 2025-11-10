@@ -193,21 +193,146 @@ export class DungeonBuilder {
      */
     getCachedMaterial(color, properties = {}) {
         // Create a cache key from color and properties
-        const key = `${color}_${properties.roughness || 0.9}_${properties.metalness || 0.1}_${properties.side || 'front'}`;
+        const key = `${color}_${properties.roughness || 0.9}_${properties.metalness || 0.1}_${properties.side || 'front'}_${properties.textureType || 'none'}`;
 
         if (this.colorMaterialCache.has(key)) {
             return this.colorMaterialCache.get(key);
         }
 
-        const material = new THREE.MeshStandardMaterial({
-            color: color,
-            roughness: properties.roughness || 0.9,
-            metalness: properties.metalness || 0.1,
-            side: properties.side || THREE.FrontSide
-        });
+        let material;
+
+        // Create textured materials for walls and floors
+        if (properties.textureType === 'stone') {
+            material = this.createStoneMaterial(color, properties);
+        } else if (properties.textureType === 'brick') {
+            material = this.createBrickMaterial(color, properties);
+        } else {
+            material = new THREE.MeshStandardMaterial({
+                color: color,
+                roughness: properties.roughness || 0.9,
+                metalness: properties.metalness || 0.1,
+                side: properties.side || THREE.FrontSide
+            });
+        }
 
         this.colorMaterialCache.set(key, material);
         return material;
+    }
+
+    /**
+     * Create a procedural stone texture material
+     */
+    createStoneMaterial(baseColor, properties = {}) {
+        // Create a canvas for the stone texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        // Base color
+        ctx.fillStyle = `#${baseColor.toString(16).padStart(6, '0')}`;
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Add stone-like noise pattern
+        for (let i = 0; i < 100; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const size = Math.random() * 10 + 2;
+            const brightness = Math.random() * 40 - 20;
+
+            ctx.globalAlpha = 0.1 + Math.random() * 0.2;
+            ctx.fillStyle = brightness > 0 ? 'white' : 'black';
+            ctx.beginPath();
+            ctx.arc(x, y, size, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Add cracks
+        ctx.globalAlpha = 0.3;
+        ctx.strokeStyle = '#333333';
+        ctx.lineWidth = 0.5;
+        for (let i = 0; i < 5; i++) {
+            ctx.beginPath();
+            ctx.moveTo(Math.random() * 256, Math.random() * 256);
+            ctx.quadraticCurveTo(
+                Math.random() * 256, Math.random() * 256,
+                Math.random() * 256, Math.random() * 256
+            );
+            ctx.stroke();
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+
+        return new THREE.MeshStandardMaterial({
+            map: texture,
+            color: baseColor,
+            roughness: properties.roughness || 0.85,
+            metalness: properties.metalness || 0.15,
+            side: properties.side || THREE.FrontSide,
+            bumpScale: 0.02
+        });
+    }
+
+    /**
+     * Create a procedural brick texture material
+     */
+    createBrickMaterial(baseColor, properties = {}) {
+        // Create a canvas for the brick texture
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 256;
+        const ctx = canvas.getContext('2d');
+
+        // Base color
+        ctx.fillStyle = `#${baseColor.toString(16).padStart(6, '0')}`;
+        ctx.fillRect(0, 0, 256, 256);
+
+        // Draw brick pattern
+        const brickWidth = 64;
+        const brickHeight = 32;
+        const mortarWidth = 4;
+
+        ctx.fillStyle = '#444444';
+        for (let row = 0; row < 8; row++) {
+            const offset = row % 2 === 0 ? 0 : brickWidth / 2;
+            for (let col = -1; col < 5; col++) {
+                const x = col * brickWidth + offset;
+                const y = row * brickHeight;
+
+                // Horizontal mortar
+                ctx.fillRect(0, y, 256, mortarWidth);
+                // Vertical mortar
+                ctx.fillRect(x - mortarWidth / 2, y, mortarWidth, brickHeight);
+            }
+        }
+
+        // Add variation to bricks
+        for (let i = 0; i < 50; i++) {
+            const x = Math.random() * 256;
+            const y = Math.random() * 256;
+            const brightness = Math.random() * 30 - 15;
+
+            ctx.globalAlpha = 0.05;
+            ctx.fillStyle = brightness > 0 ? 'white' : 'black';
+            ctx.fillRect(x, y, Math.random() * 20 + 5, Math.random() * 10 + 2);
+        }
+
+        const texture = new THREE.CanvasTexture(canvas);
+        texture.wrapS = THREE.RepeatWrapping;
+        texture.wrapT = THREE.RepeatWrapping;
+        texture.repeat.set(2, 2);
+
+        return new THREE.MeshStandardMaterial({
+            map: texture,
+            color: baseColor,
+            roughness: properties.roughness || 0.9,
+            metalness: properties.metalness || 0.1,
+            side: properties.side || THREE.FrontSide,
+            bumpScale: 0.01
+        });
     }
 
     createFloors() {
@@ -217,10 +342,11 @@ export class DungeonBuilder {
                     const room = this.getRoomAtPosition(x, y);
                     const floorColor = this.getColorForRoom(room, 'floor');
 
-                    // Use cached material instead of creating a new one each time
+                    // Use cached material with stone texture for floors
                     const floorMaterial = this.getCachedMaterial(floorColor, {
                         roughness: 0.9,
-                        metalness: 0.1
+                        metalness: 0.1,
+                        textureType: 'stone'
                     });
 
                     const floorGeometry = new THREE.PlaneGeometry(
@@ -284,10 +410,11 @@ export class DungeonBuilder {
                     const room = this.getRoomAtPosition(x, y);
                     const wallColor = this.getColorForRoom(room, 'wall');
 
-                    // Use cached material instead of creating a new one each time
+                    // Use cached material with brick texture for walls
                     const wallMaterial = this.getCachedMaterial(wallColor, {
                         roughness: 0.85,
-                        metalness: 0.15
+                        metalness: 0.15,
+                        textureType: 'brick'
                     });
 
                     // Check four directions for walls
@@ -717,8 +844,8 @@ export class DungeonBuilder {
         const suitableWalls = this.findSuitableWalls();
         console.log(`Found ${suitableWalls.length} suitable wall segments`);
 
-        // Determine how many paintings to place (20-30% of suitable walls)
-        const paintingCount = Math.floor(suitableWalls.length * (0.20 + Math.random() * 0.10));
+        // Determine how many paintings to place (80-100% of suitable walls for rich decoration)
+        const paintingCount = Math.floor(suitableWalls.length * (0.80 + Math.random() * 0.20));
         console.log(`Placing ${paintingCount} paintings`);
 
         // Shuffle walls for random placement
@@ -846,20 +973,23 @@ export class DungeonBuilder {
     getWallCenterPosition(x, y, direction) {
         let wallX = x * this.config.cellSize;
         let wallZ = y * this.config.cellSize;
-        const wallY = this.config.wallHeight * 0.5; // Center height on wall
+        const wallY = 1.6; // Eye level height for paintings
+
+        // Position paintings at the actual wall face, not just offset from grid center
+        const wallOffset = (this.config.cellSize / 2) - 0.1; // Slightly inside the wall face
 
         switch (direction) {
             case 'north':
-                wallZ -= this.config.cellSize / 2;
+                wallZ -= wallOffset;
                 break;
             case 'south':
-                wallZ += this.config.cellSize / 2;
+                wallZ += wallOffset;
                 break;
             case 'west':
-                wallX -= this.config.cellSize / 2;
+                wallX -= wallOffset;
                 break;
             case 'east':
-                wallX += this.config.cellSize / 2;
+                wallX += wallOffset;
                 break;
         }
 
@@ -918,17 +1048,23 @@ export class DungeonBuilder {
         // Generate procedurally texture
         const texture = this.paintingGallery.generatePaintingTexture(paintingData, 256, 256);
 
+        // Make sure texture is ready
+        texture.needsUpdate = true;
+
         // Create painting instance with procedural texture
         const painting = new Painting(paintingData, frameStyle);
+
+        // Set the texture BEFORE creating canvas
         painting.texture = texture;
+        painting.texture.needsUpdate = true;
 
         // Create canvas and frame without loading from file
         painting.createCanvas();
         painting.createFrame(frameStyle);
         painting.isLoaded = true;
 
-        // Place on wall
-        painting.placeOnWall(wallSegment.position, wallSegment.normal, 0.05);
+        // Place on wall with proper offset to attach it to the wall surface
+        painting.placeOnWall(wallSegment.position, wallSegment.normal, 0.15);
 
         // Add to scene
         this.scene.add(painting.group);

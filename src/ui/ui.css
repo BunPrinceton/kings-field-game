@@ -29,20 +29,20 @@
   --kf-glow: 0 0 8px rgba(74, 157, 111, 0.4);
 
   /* Spacing & Sizing */
-  --kf-spacing-xs: 4px;
-  --kf-spacing-sm: 8px;
-  --kf-spacing-md: 16px;
-  --kf-spacing-lg: 24px;
-  --kf-spacing-xl: 32px;
+  --kf-spacing-xs: 3px;
+  --kf-spacing-sm: 6px;
+  --kf-spacing-md: 12px;
+  --kf-spacing-lg: 18px;
+  --kf-spacing-xl: 24px;
 
-  --kf-corner-offset: 20px;       /* Distance from screen corners */
+  --kf-corner-offset: 15px;       /* Distance from screen corners */
 
   /* Typography */
   --kf-font-mono: 'Courier New', 'Consolas', monospace;
-  --kf-font-size-sm: 12px;
-  --kf-font-size-md: 14px;
-  --kf-font-size-lg: 18px;
-  --kf-font-size-xl: 24px;
+  --kf-font-size-sm: 10px;
+  --kf-font-size-md: 12px;
+  --kf-font-size-lg: 14px;
+  --kf-font-size-xl: 18px;
 
   /* Animation Timings */
   --kf-transition-fast: 0.15s ease-out;
@@ -100,7 +100,7 @@ canvas {
   display: flex;
   flex-direction: column;
   gap: var(--kf-spacing-xs);
-  min-width: 220px;
+  min-width: 160px;
 }
 
 .stat-label {
@@ -122,7 +122,7 @@ canvas {
 .stat-bar-bg {
   background: var(--kf-bg-dark);
   border: var(--kf-border);
-  height: 20px;
+  height: 14px;
   position: relative;
   overflow: hidden;
   box-shadow: var(--kf-shadow);
@@ -217,8 +217,8 @@ canvas {
 }
 
 #minimap {
-  width: 150px;
-  height: 150px;
+  width: 100px;
+  height: 100px;
   background: rgba(0, 0, 0, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
@@ -255,8 +255,8 @@ canvas {
 }
 
 .hotbar-slot {
-  width: 60px;
-  height: 60px;
+  width: 40px;
+  height: 40px;
   background: var(--kf-bg-medium);
   border: var(--kf-border);
   display: flex;

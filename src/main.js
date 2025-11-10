@@ -23,6 +23,7 @@ import { LoadingScreen } from './LoadingScreen.js';
 import { StairManager } from './StairManager.js';
 import { InstanceManager } from './instances/InstanceManager.js';
 import { PortalManager } from './instances/InstancePortal.js';
+import { DemoRoom } from './DemoRoom.js';
 
 /**
  * Health system class - manages health for entities
@@ -89,6 +90,7 @@ class Player {
     constructor(scene) {
         this.scene = scene;
         this.health = new Health(100);
+        this.mana = new Health(100);  // Add mana system
         this.position = { x: 0, y: PLAYER_EYE_HEIGHT, z: 5 };
         this.rotation = { x: 0, y: 0 };
         this.attackPower = 25;
@@ -96,6 +98,13 @@ class Player {
         this.isAttacking = false;
         this.attackCooldown = 0;
         this.attackCooldownMax = ATTACK_COOLDOWN_MS;
+
+        // Jump mechanics
+        this.isJumping = false;
+        this.jumpVelocity = 0;
+        this.jumpPower = 8;
+        this.gravity = -20;
+        this.groundHeight = PLAYER_EYE_HEIGHT;
 
         // Armor system
         this.armorSystem = new ArmorSystem(scene);
@@ -205,6 +214,11 @@ class Player {
         // Update armor system
         if (this.armorSystem) {
             this.armorSystem.update(deltaTime);
+        }
+
+        // Regenerate mana slowly
+        if (this.mana.current < this.mana.max) {
+            this.mana.heal(deltaTime * 0.005); // Regenerate 5 mana per second (deltaTime is in ms)
         }
     }
 }
@@ -370,12 +384,15 @@ const game = {
     paintingGallery: null, // PaintingGallery instance
     paintingInteraction: null, // PaintingInteraction instance
     chestManager: null, // ChestManager instance
+    menuOpen: false, // ESC menu state
     trapManager: null, // TrapManager instance
     loadingScreen: null, // LoadingScreen instance
     stairManager: null, // StairManager instance
     currentLevel: 1, // Current dungeon level
     instanceManager: null, // InstanceManager instance
-    portalManager: null // PortalManager instance
+    portalManager: null, // PortalManager instance
+    demoRoom: null, // Demo room for inspecting objects
+    demoRoomActive: false // Whether demo room is active
 };
 
 // Audio initialization
@@ -493,7 +510,7 @@ function setupPointerLock() {
 
     // Handle mouse movement for camera look
     document.addEventListener('mousemove', (e) => {
-        if (!game.mouse.isLocked) return;
+        if (!game.mouse.isLocked || game.menuOpen) return;
 
         // Update yaw (left/right)
         game.mouse.yaw -= e.movementX * game.mouse.sensitivity;
@@ -866,10 +883,11 @@ async function generateNewLevel() {
     game.stairManager.dungeonData = game.dungeon.data;
     game.stairManager.placeStairs();
 
-    // Set player spawn position
+    // Set player spawn position with safety offset
     const spawnPos = game.dungeon.generator.getSpawnPosition();
-    game.player.position.x = spawnPos.x * 4;
-    game.player.position.z = spawnPos.z * 4;
+    // Add a small offset to avoid spawning inside walls or objects
+    game.player.position.x = spawnPos.x * 4 + 2;
+    game.player.position.z = spawnPos.z * 4 + 2;
 
     game.camera.position.set(
         game.player.position.x,
@@ -888,6 +906,288 @@ async function generateNewLevel() {
     updateUI();
 }
 
+// Toggle demo room display
+async function toggleDemoRoom() {
+    if (!game.demoRoomActive) {
+        // Create and activate demo room
+        console.log('Creating demo room...');
+
+        // Save current position
+        game.savedPosition = {
+            x: game.player.position.x,
+            z: game.player.position.z
+        };
+
+        // Move player to demo room
+        game.player.position.x = 100; // Far from main dungeon
+        game.player.position.z = 100;
+        game.camera.position.x = 100;
+        game.camera.position.z = 100;
+
+        // Create demo room
+        game.demoRoom = new DemoRoom(game.scene, { x: 100, z: 100 });
+        await game.demoRoom.build();
+
+        game.demoRoomActive = true;
+        console.log('Demo room activated! Press R to return to dungeon.');
+
+        // Display painting gallery in new window
+        displayPaintingGallery();
+    } else {
+        // Return to dungeon
+        console.log('Returning to dungeon...');
+
+        // Restore position
+        if (game.savedPosition) {
+            game.player.position.x = game.savedPosition.x;
+            game.player.position.z = game.savedPosition.z;
+            game.camera.position.x = game.savedPosition.x;
+            game.camera.position.z = game.savedPosition.z;
+        }
+
+        // Clean up demo room
+        if (game.demoRoom) {
+            game.demoRoom.dispose();
+            game.demoRoom = null;
+        }
+
+        game.demoRoomActive = false;
+        console.log('Returned to dungeon.');
+
+        // Close painting gallery window
+        closePaintingGallery();
+    }
+}
+
+// Display painting gallery in a new window
+function displayPaintingGallery() {
+    const galleryWindow = window.open('', 'paintingGallery', 'width=800,height=600');
+
+    if (!galleryWindow) {
+        console.warn('Could not open painting gallery window');
+        return;
+    }
+
+    // Store reference
+    game.paintingGalleryWindow = galleryWindow;
+
+    // Generate HTML for painting display
+    const paintings = game.paintingGallery.getStats();
+    const html = `
+        <!DOCTYPE html>
+        <html>
+        <head>
+            <title>Painting Gallery Inspector</title>
+            <style>
+                body {
+                    font-family: monospace;
+                    background: #222;
+                    color: #fff;
+                    padding: 20px;
+                    margin: 0;
+                }
+                h1 { color: #ffa500; }
+                .category {
+                    margin: 20px 0;
+                    border: 1px solid #444;
+                    padding: 10px;
+                }
+                .painting {
+                    display: inline-block;
+                    margin: 10px;
+                    text-align: center;
+                }
+                canvas {
+                    border: 2px solid #666;
+                    display: block;
+                    margin: 5px auto;
+                }
+                .title {
+                    font-size: 12px;
+                    color: #aaa;
+                }
+            </style>
+        </head>
+        <body>
+            <h1>Painting Gallery Inspector</h1>
+            <p>Total Paintings: ${paintings.totalPaintings}</p>
+            <p>Categories: ${paintings.categories.join(', ')}</p>
+            <div id="gallery"></div>
+            <script>
+                // Create canvases for each painting
+                const categories = ${JSON.stringify(['portraits', 'landscapes', 'creatures'])};
+                const galleryDiv = document.getElementById('gallery');
+
+                categories.forEach((category, catIndex) => {
+                    const categoryDiv = document.createElement('div');
+                    categoryDiv.className = 'category';
+                    categoryDiv.innerHTML = '<h2>' + category.toUpperCase() + '</h2>';
+
+                    for (let i = 0; i < 3; i++) {
+                        const paintingDiv = document.createElement('div');
+                        paintingDiv.className = 'painting';
+
+                        const canvas = document.createElement('canvas');
+                        canvas.width = 128;
+                        canvas.height = 128;
+                        const ctx = canvas.getContext('2d');
+
+                        // Draw procedural painting
+                        const gradient = ctx.createLinearGradient(0, 0, 128, 128);
+                        gradient.addColorStop(0, '#' + Math.floor(Math.random()*16777215).toString(16));
+                        gradient.addColorStop(1, '#' + Math.floor(Math.random()*16777215).toString(16));
+                        ctx.fillStyle = gradient;
+                        ctx.fillRect(0, 0, 128, 128);
+
+                        // Category-specific shapes
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 1;
+
+                        if (category === 'portraits') {
+                            ctx.beginPath();
+                            ctx.arc(64, 50, 20, 0, Math.PI * 2);
+                            ctx.stroke();
+                            ctx.beginPath();
+                            ctx.arc(55, 45, 3, 0, Math.PI * 2);
+                            ctx.arc(73, 45, 3, 0, Math.PI * 2);
+                            ctx.stroke();
+                        } else if (category === 'landscapes') {
+                            ctx.beginPath();
+                            ctx.moveTo(0, 90);
+                            ctx.lineTo(40, 60);
+                            ctx.lineTo(64, 70);
+                            ctx.lineTo(90, 50);
+                            ctx.lineTo(128, 80);
+                            ctx.stroke();
+                        } else {
+                            ctx.beginPath();
+                            ctx.moveTo(64, 30);
+                            for (let j = 0; j < 6; j++) {
+                                const angle = (j / 6) * Math.PI * 2;
+                                ctx.lineTo(
+                                    64 + Math.cos(angle) * 30,
+                                    64 + Math.sin(angle) * 30
+                                );
+                            }
+                            ctx.closePath();
+                            ctx.stroke();
+                        }
+
+                        // Label
+                        ctx.fillStyle = '#fff';
+                        ctx.font = '10px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(category + '_' + (i + 1), 64, 120);
+
+                        paintingDiv.appendChild(canvas);
+
+                        const title = document.createElement('div');
+                        title.className = 'title';
+                        title.textContent = category + '_painting_' + (i + 1);
+                        paintingDiv.appendChild(title);
+
+                        categoryDiv.appendChild(paintingDiv);
+                    }
+
+                    galleryDiv.appendChild(categoryDiv);
+                });
+            </script>
+        </body>
+        </html>
+    `;
+
+    galleryWindow.document.write(html);
+    galleryWindow.document.close();
+}
+
+// Close painting gallery window
+function closePaintingGallery() {
+    if (game.paintingGalleryWindow && !game.paintingGalleryWindow.closed) {
+        game.paintingGalleryWindow.close();
+        game.paintingGalleryWindow = null;
+    }
+}
+
+// Cast fire spell
+function castFireSpell() {
+    const manaCost = 20;
+
+    // Check if player has enough mana
+    if (game.player.mana.current < manaCost) {
+        console.log('Not enough mana!');
+        return;
+    }
+
+    // Consume mana
+    game.player.mana.takeDamage(manaCost);
+
+    // Create fireball
+    const fireball = new THREE.Mesh(
+        new THREE.SphereGeometry(0.3, 8, 8),
+        new THREE.MeshBasicMaterial({
+            color: 0xff4400,
+            emissive: 0xff4400,
+            emissiveIntensity: 2
+        })
+    );
+
+    // Position fireball in front of player
+    const direction = new THREE.Vector3(
+        -Math.sin(game.mouse.yaw),
+        Math.sin(game.mouse.pitch),
+        -Math.cos(game.mouse.yaw)
+    );
+
+    fireball.position.set(
+        game.player.position.x + direction.x * 2,
+        game.player.position.y + direction.y * 2,
+        game.player.position.z + direction.z * 2
+    );
+
+    // Add to scene
+    game.scene.add(fireball);
+
+    // Animate fireball
+    const speed = 15;
+    const maxDistance = 20;
+    let traveled = 0;
+
+    const animateFireball = () => {
+        if (traveled >= maxDistance) {
+            // Remove fireball and create explosion effect
+            game.scene.remove(fireball);
+            return;
+        }
+
+        // Move fireball
+        fireball.position.add(direction.clone().multiplyScalar(speed * 0.016));
+        traveled += speed * 0.016;
+
+        // Check collision with enemies
+        for (const enemy of game.enemies) {
+            if (!enemy.isDead()) {
+                const distance = fireball.position.distanceTo(enemy.mesh.position);
+                if (distance < 1) {
+                    // Deal damage to enemy
+                    enemy.takeDamage(50);
+                    game.scene.remove(fireball);
+
+                    // Create hit effect
+                    if (game.hitEffects) {
+                        game.hitEffects.createMagicHit(enemy.mesh.position);
+                    }
+                    return;
+                }
+            }
+        }
+
+        requestAnimationFrame(animateFireball);
+    };
+
+    animateFireball();
+    console.log('Fire spell cast! Mana:', game.player.mana.current);
+}
+
 // Input handling
 function setupInput() {
     window.addEventListener('keydown', (e) => {
@@ -896,10 +1196,35 @@ function setupInput() {
             initAudio();
         }
 
-        // Handle attack
+        // Handle ESC menu toggle
+        if (e.code === 'Escape') {
+            e.preventDefault();
+            toggleMenu();
+            return;
+        }
+
+        // Don't process game inputs if menu is open
+        if (game.menuOpen) return;
+
+        // Handle jump with spacebar
         if (e.code === 'Space') {
             e.preventDefault();
+            if (!game.player.isJumping) {
+                game.player.isJumping = true;
+                game.player.jumpVelocity = game.player.jumpPower;
+            }
+        }
+
+        // Handle attack with left click or Q
+        if (e.code === 'KeyQ') {
+            e.preventDefault();
             game.input.attack = true;
+        }
+
+        // Handle fire spell with F key
+        if (e.code === 'KeyF') {
+            e.preventDefault();
+            castFireSpell();
         }
 
         // Handle furniture interaction (E key)
@@ -911,10 +1236,22 @@ function setupInput() {
             tryInteractWithPortal();
         }
 
-        // Handle sprint and dash (Shift double-tap to dash)
+        // Toggle demo room with R key
+        if (e.code === 'KeyR') {
+            e.preventDefault();
+            toggleDemoRoom();
+        }
+
+        // Toggle sprint with Shift
         if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
+            game.movement.isSprinting = !game.movement.isSprinting;
+            console.log('Sprint:', game.movement.isSprinting ? 'ON' : 'OFF');
+        }
+
+        // Handle dash with double-tap W
+        if (e.code === 'KeyW') {
             const now = Date.now();
-            const timeSinceLastPress = now - game.movement.lastShiftPress;
+            const timeSinceLastPress = now - game.movement.lastWPress;
 
             // Double-tap detection (within 300ms)
             if (timeSinceLastPress < 300 && game.movement.dashCooldownTimer <= 0) {
@@ -930,8 +1267,7 @@ function setupInput() {
                 }
             }
 
-            game.movement.lastShiftPress = now;
-            game.movement.isSprinting = true;
+            game.movement.lastWPress = now;
         }
 
         // Handle weapon switching (1-4 keys for default weapons, 5-9 for inventory swords)
@@ -1055,15 +1391,12 @@ function setupInput() {
 
     window.addEventListener('keyup', (e) => {
         // Handle attack release
-        if (e.code === 'Space') {
+        if (e.code === 'KeyQ') {
             e.preventDefault();
             game.input.attack = false;
         }
 
-        // Handle sprint release
-        if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') {
-            game.movement.isSprinting = false;
-        }
+        // Sprint is now toggle, don't release on key up
 
         // Track key states
         game.keys[e.key.toLowerCase()] = false;
@@ -1081,23 +1414,43 @@ function setupInput() {
 }
 
 // Check if a position has a collision (radius-based for smooth movement)
-function checkCollision(x, z, playerRadius = 0.3) {
+function checkCollision(x, z, playerRadius = 0.4) {
     // Check against collidable objects
     for (const obj of game.collidableObjects) {
-        const objGridPos = obj.userData.gridPos;
-        if (!objGridPos) continue;
+        // Skip if object doesn't have position
+        if (!obj.position) continue;
 
         // Use actual object position (more accurate than grid position)
         const objX = obj.position.x;
         const objZ = obj.position.z;
 
-        // Get object-specific collision radius (or default)
-        let objectRadius = obj.userData.collisionRadius || 1.5; // Default for walls
+        // Get object-specific collision radius or calculate from geometry
+        let objectRadius = obj.userData.collisionRadius;
 
-        // If it's a wall-type object (no specific radius), use larger radius
-        if (!obj.userData.collisionRadius && obj.geometry instanceof THREE.BoxGeometry) {
-            // Walls are typically BoxGeometry
-            objectRadius = 1.5;
+        if (!objectRadius) {
+            // Calculate radius based on object geometry
+            if (obj.geometry) {
+                obj.geometry.computeBoundingBox();
+                const bbox = obj.geometry.boundingBox;
+                if (bbox) {
+                    const sizeX = Math.abs(bbox.max.x - bbox.min.x);
+                    const sizeZ = Math.abs(bbox.max.z - bbox.min.z);
+                    objectRadius = Math.max(sizeX, sizeZ) / 2;
+
+                    // Scale by object's scale if it exists
+                    if (obj.scale) {
+                        objectRadius *= Math.max(obj.scale.x, obj.scale.z);
+                    }
+                }
+            }
+
+            // Default fallback radius
+            if (!objectRadius) {
+                objectRadius = 0.5;
+            }
+
+            // Cache the calculated radius
+            obj.userData.collisionRadius = objectRadius;
         }
 
         // Calculate distance between player and object
@@ -1105,16 +1458,52 @@ function checkCollision(x, z, playerRadius = 0.3) {
         const dz = z - objZ;
         const distance = Math.sqrt(dx * dx + dz * dz);
 
-        // Check collision with combined radii
-        if (distance < playerRadius + objectRadius) {
+        // Check collision with combined radii (add small buffer for smoother collision)
+        if (distance < playerRadius + objectRadius + 0.1) {
             return true;
         }
     }
+
+    // Also check against dungeon walls more precisely
+    const gridX = Math.round(x / 4);
+    const gridZ = Math.round(z / 4);
+
+    // Check if position is outside dungeon bounds
+    if (gridX < 0 || gridX >= game.dungeon.data.width ||
+        gridZ < 0 || gridZ >= game.dungeon.data.height) {
+        return true;
+    }
+
+    // Check if position is in a wall cell
+    if (game.dungeon.data.grid[gridZ][gridX] === 0) {
+        return true;
+    }
+
     return false;
 }
 
 // Process continuous movement based on key states
 function updateMovement(deltaTime) {
+    // Don't process movement if menu is open
+    if (game.menuOpen) {
+        game.movement.velocity.x *= 0.9;
+        game.movement.velocity.z *= 0.9;
+        return;
+    }
+
+    // Update jump physics
+    if (game.player.isJumping) {
+        game.player.jumpVelocity += game.player.gravity * deltaTime;
+        game.player.position.y += game.player.jumpVelocity * deltaTime;
+
+        // Check if landed
+        if (game.player.position.y <= game.player.groundHeight) {
+            game.player.position.y = game.player.groundHeight;
+            game.player.isJumping = false;
+            game.player.jumpVelocity = 0;
+        }
+    }
+
     // Update dash timers
     if (game.movement.dashTimer > 0) {
         game.movement.dashTimer -= deltaTime;
@@ -1131,10 +1520,10 @@ function updateMovement(deltaTime) {
     let moveZ = 0;
 
     if (game.keys['w'] || game.keys['arrowup']) {
-        moveZ -= 1;
+        moveZ += 1;  // W now moves backward
     }
     if (game.keys['s'] || game.keys['arrowdown']) {
-        moveZ += 1;
+        moveZ -= 1;  // S now moves forward
     }
     if (game.keys['a'] || game.keys['arrowleft']) {
         moveX -= 1;
@@ -1295,8 +1684,10 @@ async function init() {
 
     console.log('Added additional swords to inventory for testing');
 
-    // Initialize painting gallery
-    game.paintingGallery = new PaintingGallery();
+    // Initialize painting gallery with scene and load paintings
+    game.paintingGallery = new PaintingGallery(game.scene);
+    // Load manifest or create fallback paintings
+    await game.paintingGallery.loadManifest();
     console.log('Painting gallery initialized');
 
     // Renderer setup
@@ -1352,7 +1743,12 @@ async function init() {
     // Populate collidable objects for collision detection
     // Use wall meshes from the builder
     game.collidableObjects = game.dungeon.builder.meshes.filter(mesh => {
-        // Filter out floors and ceilings, keep only walls and decorations
+        // Filter out floors, ceilings, and paintings
+        // Paintings are THREE.Group objects, not meshes
+        if (mesh instanceof THREE.Group) {
+            return false; // Skip groups (paintings)
+        }
+        // Keep only walls (BoxGeometry above ground level)
         return mesh.geometry instanceof THREE.BoxGeometry && mesh.position.y > 0.5;
     });
 
@@ -1450,10 +1846,11 @@ async function init() {
 
     // Link armor system reference for easier access
     game.armorSystem = game.player.armorSystem;
-    // Set player spawn position
+    // Set player spawn position with safety offset
     const spawnPos = game.dungeon.generator.getSpawnPosition();
-    game.player.position.x = spawnPos.x * 4;
-    game.player.position.z = spawnPos.z * 4;
+    // Add a small offset to avoid spawning inside walls or objects
+    game.player.position.x = spawnPos.x * 4 + 2;
+    game.player.position.z = spawnPos.z * 4 + 2;
 
     game.camera.position.set(
         game.player.position.x,
@@ -1537,123 +1934,122 @@ function spawnEnemies() {
     }
 }
 
-// Update UI display
-function updateUI() {
-    const healthPercent = game.player.health.getPercentage();
-    const healthColor = healthPercent > 50 ? '#0f0' : healthPercent > 25 ? '#ff0' : '#f00';
+// Toggle ESC menu
+function toggleMenu() {
+    game.menuOpen = !game.menuOpen;
 
-    // Get weapon stats if weapon system is initialized
-    let weaponInfo = '';
-    if (game.weaponSystem) {
-        const stats = game.weaponSystem.getWeaponStats();
-        const currentItem = game.weaponSystem.getCurrentWeaponItem();
+    const existingMenu = document.getElementById('game-menu');
 
-        let durabilityInfo = '';
-        let extraInfo = '';
-
-        if (currentItem instanceof Sword) {
-            const durPercent = currentItem.getDurabilityPercent();
-            const durColor = durPercent > 50 ? '#0f0' : durPercent > 25 ? '#ff0' : '#f00';
-            durabilityInfo = `<span style="color: ${durColor}; margin-left: 5px;">[${currentItem.durability}/${currentItem.maxDurability}]</span>`;
-
-            if (currentItem.elementalDamage) {
-                extraInfo += ` | ${currentItem.elementalDamage.type}: ${currentItem.elementalDamage.amount}`;
-            }
-            if (currentItem.critChance > 0) {
-                extraInfo += ` | Crit: ${(currentItem.critChance * 100).toFixed(0)}%`;
-            }
+    if (game.menuOpen) {
+        // Pause game when menu opens
+        if (game.mouse.isLocked && document.pointerLockElement) {
+            document.exitPointerLock();
         }
 
-        weaponInfo = `
-            <div style="font-size: 12px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #666;">
-                <div style="color: #ffa500; margin-bottom: 3px;">${stats.name}${durabilityInfo}</div>
-                <div style="font-size: 11px;">Damage: ${stats.damage} | Range: ${stats.range.toFixed(1)} | Speed: ${(1000/stats.attackSpeed).toFixed(1)}/s${extraInfo}</div>
-            </div>
-        `;
-    }
+        // Create menu HTML
+        const menuHTML = `
+            <div id="game-menu" style="
+                position: fixed;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                background: rgba(0, 0, 0, 0.85);
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                z-index: 10000;
+                color: white;
+                font-family: 'Courier New', monospace;
+            ">
+                <div style="
+                    background: rgba(20, 20, 20, 0.95);
+                    border: 2px solid #444;
+                    padding: 30px;
+                    max-width: 600px;
+                    max-height: 80vh;
+                    overflow-y: auto;
+                    border-radius: 5px;
+                ">
+                    <h2 style="text-align: center; color: #ffa500; margin-bottom: 20px;">KINGS FIELD - MENU</h2>
 
-    // Get inventory info
-    let inventoryInfo = '';
-    if (game.inventory) {
-        inventoryInfo = '<div style="font-size: 11px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #666;">';
-        inventoryInfo += '<div style="color: #aaffaa; margin-bottom: 3px;">INVENTORY (Press 5-9 to equip)</div>';
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #88aaff; margin-bottom: 10px;">CONTROLS</h3>
+                        <div style="font-size: 14px; line-height: 1.8;">
+                            <div><span style="color: #ffa500;">S/↓</span> - Move Forward</div>
+                            <div><span style="color: #ffa500;">W/↑</span> - Move Backward</div>
+                            <div><span style="color: #ffa500;">A/←</span> - Strafe Left</div>
+                            <div><span style="color: #ffa500;">D/→</span> - Strafe Right</div>
+                            <div><span style="color: #ffa500;">MOUSE</span> - Look Around</div>
+                            <div><span style="color: #ffa500;">SHIFT</span> - Toggle Sprint</div>
+                            <div><span style="color: #ffa500;">W x2</span> - Dash (Double Tap)</div>
+                            <div><span style="color: #ffa500;">SPACE</span> - Jump</div>
+                            <div><span style="color: #ffa500;">Q</span> - Attack</div>
+                            <div><span style="color: #ffa500;">F</span> - Fire Spell (20 Mana)</div>
+                            <div><span style="color: #ffa500;">E</span> - Interact</div>
+                            <div><span style="color: #ffa500;">I</span> - Inventory (Coming Soon)</div>
+                            <div><span style="color: #ffa500;">ESC</span> - Toggle This Menu</div>
+                        </div>
+                    </div>
 
-        for (let i = 0; i < 5; i++) {
-            const slot = game.inventory.getSlot(i);
-            if (slot && slot.item instanceof Sword) {
-                const item = slot.item;
-                const rarityColor = {
-                    'common': '#aaa',
-                    'uncommon': '#5f5',
-                    'rare': '#55f',
-                    'legendary': '#fa0'
-                }[item.rarity] || '#fff';
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #88aaff; margin-bottom: 10px;">EQUIPMENT KEYS</h3>
+                        <div style="font-size: 14px; line-height: 1.8;">
+                            <div><span style="color: #ffa500;">1-4</span> - Switch Weapons</div>
+                            <div><span style="color: #ffa500;">5-9</span> - Equip Inventory Swords</div>
+                            <div><span style="color: #ffa500;">F1-F4</span> - Equip Armor</div>
+                            <div><span style="color: #ffa500;">F5-F8</span> - Equip Helmets</div>
+                            <div><span style="color: #ffa500;">F9-F12</span> - Equip Shields</div>
+                        </div>
+                    </div>
 
-                inventoryInfo += `<div style="font-size: 10px;">
-                    [${i + 5}] <span style="color: ${rarityColor}">${item.name}</span> (Dmg: ${item.damage})
-                </div>`;
-            } else {
-                inventoryInfo += `<div style="font-size: 10px; color: #555;">[${i + 5}] Empty</div>`;
-            }
-        }
+                    <div style="margin-bottom: 30px;">
+                        <h3 style="color: #88aaff; margin-bottom: 10px;">DEBUG KEYS</h3>
+                        <div style="font-size: 14px; line-height: 1.8;">
+                            <div><span style="color: #ffa500;">T</span> - Test Damage</div>
+                            <div><span style="color: #ffa500;">H</span> - Heal to Full</div>
+                            <div><span style="color: #ffa500;">R</span> - Repair All Armor</div>
+                        </div>
+                    </div>
 
-        inventoryInfo += '</div>';
-    }
-
-    // Get armor stats if armor system is initialized
-    let armorInfo = '';
-    if (game.armorSystem) {
-        const equipment = game.armorSystem.getEquipmentSummary();
-        const durability = game.armorSystem.getDurabilityInfo();
-
-        // Color code durability
-        const armorDurColor = durability.armor.percentage > 50 ? '#0f0' : durability.armor.percentage > 25 ? '#ff0' : '#f00';
-        const helmetDurColor = durability.helmet.percentage > 50 ? '#0f0' : durability.helmet.percentage > 25 ? '#ff0' : '#f00';
-        const shieldDurColor = durability.shield.percentage > 50 ? '#0f0' : durability.shield.percentage > 25 ? '#ff0' : '#f00';
-
-        armorInfo = `
-            <div style="font-size: 12px; margin-top: 10px; padding: 5px; background: rgba(0,0,0,0.5); border: 1px solid #888;">
-                <div style="color: #88aaff; margin-bottom: 5px; font-weight: bold;">ARMOR EQUIPMENT</div>
-
-                <div style="font-size: 11px; margin-bottom: 3px;">
-                    Body: <span style="color: #aaa;">${equipment.armor.stats.name}</span>
-                    ${equipment.armor.stats.defense > 0 ? `<span style="color: ${armorDurColor}; margin-left: 5px;">[${Math.ceil(durability.armor.current)}/${durability.armor.max}]</span>` : ''}
-                </div>
-
-                <div style="font-size: 11px; margin-bottom: 3px;">
-                    Head: <span style="color: #aaa;">${equipment.helmet.stats.name}</span>
-                    ${equipment.helmet.stats.defense > 0 ? `<span style="color: ${helmetDurColor}; margin-left: 5px;">[${Math.ceil(durability.helmet.current)}/${durability.helmet.max}]</span>` : ''}
-                </div>
-
-                <div style="font-size: 11px; margin-bottom: 5px;">
-                    Shield: <span style="color: #aaa;">${equipment.shield.stats.name}</span>
-                    ${equipment.shield.stats.defense > 0 ? `<span style="color: ${shieldDurColor}; margin-left: 5px;">[${Math.ceil(durability.shield.current)}/${durability.shield.max}]</span>` : ''}
-                </div>
-
-                <div style="font-size: 11px; border-top: 1px solid #555; padding-top: 3px; margin-top: 3px;">
-                    <div>Defense: <span style="color: #8f8;">${equipment.total.defense}</span> | Weight: <span style="color: ${equipment.total.weight > 10 ? '#f88' : '#aaa'}">${equipment.total.weight.toFixed(1)}</span></div>
-                    <div>Speed: <span style="color: ${equipment.total.speedModifier < 1 ? '#f88' : '#8f8'}">${(equipment.total.speedModifier * 100).toFixed(0)}%</span> | Block: <span style="color: #88f">${(equipment.total.blockChance * 100).toFixed(0)}%</span></div>
-                    <div style="font-size: 10px; margin-top: 2px;">
-                        Resist:
-                        Phys <span style="color: #aaa">${(equipment.total.resistances.physical * 100).toFixed(0)}%</span> |
-                        Fire <span style="color: #f88">${(equipment.total.resistances.fire * 100).toFixed(0)}%</span> |
-                        Ice <span style="color: #88f">${(equipment.total.resistances.ice * 100).toFixed(0)}%</span> |
-                        Ltng <span style="color: #ff8">${(equipment.total.resistances.lightning * 100).toFixed(0)}%</span>
+                    <div style="text-align: center; margin-top: 30px;">
+                        <button onclick="toggleMenu()" style="
+                            padding: 10px 30px;
+                            background: #444;
+                            border: 2px solid #666;
+                            color: white;
+                            font-family: 'Courier New', monospace;
+                            cursor: pointer;
+                            font-size: 16px;
+                        ">CLOSE (ESC)</button>
                     </div>
                 </div>
             </div>
         `;
+
+        // Add menu to page
+        const menuContainer = document.createElement('div');
+        menuContainer.innerHTML = menuHTML;
+        document.body.appendChild(menuContainer.firstElementChild);
+    } else {
+        // Resume game when menu closes
+        if (existingMenu) {
+            existingMenu.remove();
+        }
     }
+}
 
-    const audioStatus = game.audioInitialized
-        ? '<span style="color: #0f0;">ENABLED</span>'
-        : '<span style="color: #ff0;">Click to enable</span>';
+// Make toggleMenu globally accessible for button
+window.toggleMenu = toggleMenu;
 
-    const masterVolume = game.audio ? Math.round(game.audio.masterVolume * 100) : 100;
+// Update UI display
+function updateUI() {
+    const healthPercent = game.player.health.getPercentage();
+    const healthColor = healthPercent > 50 ? '#4a9d6f' : healthPercent > 25 ? '#d4a574' : '#c75450';
+    const manaPercent = game.player.mana.getPercentage();
+    const manaColor = '#7a9cc6';
 
-    const mouseLockStatus = game.mouse.isLocked
-        ? '<span style="color: #0f0;">ACTIVE</span>'
-        : '<span style="color: #ff0;">Click to activate</span>';
+    // Simplified UI - inventory and equipment details moved to menu/inventory screen
 
     // Check for nearby chest
     let chestPrompt = '';
@@ -1702,72 +2098,42 @@ function updateUI() {
         }
     }
 
-    // Get chest and trap stats
-    let statsInfo = '';
-    if (game.chestManager && game.trapManager && game.stairManager) {
-        const chestStats = game.chestManager.getStats();
-        const trapStats = game.trapManager.getStats();
-        const stairStats = game.stairManager.getStats();
-        statsInfo = `
-            <div style="font-size: 11px; opacity: 0.5; margin-top: 5px;">
-                Level: ${stairStats.currentLevel}/${stairStats.maxLevel} | Chests: ${chestStats.opened}/${chestStats.total} | Traps: ${trapStats.total}
-            </div>
-        `;
-    }
+
+    // Simplified UI with health, mana, and sprint indicator
+    const sprintIcon = game.movement.isSprinting ? '🏃' : '🚶';
 
     const uiHTML = `
-        <div style="font-size: 16px;">
-            <div style="margin-bottom: 10px;">Kings Field - Real-time Controls</div>
-            <div style="margin-bottom: 5px;">
-                Health: <span style="color: ${healthColor}">${game.player.health.current}/${game.player.health.max}</span>
-            </div>
-            <div style="background: #333; width: 200px; height: 20px; border: 2px solid #fff; margin-bottom: 10px;">
+        <!-- Health Bar -->
+        <div style="position: fixed; top: 20px; left: 20px; width: 200px;">
+            <div style="color: white; font-size: 12px; margin-bottom: 2px;">Health</div>
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid #333; height: 16px;">
                 <div style="background: ${healthColor}; width: ${healthPercent}%; height: 100%; transition: width 0.3s;"></div>
             </div>
-            ${weaponInfo}
-            ${inventoryInfo}
-            ${armorInfo}
+        </div>
+
+        <!-- Mana Bar -->
+        <div style="position: fixed; top: 50px; left: 20px; width: 200px;">
+            <div style="color: white; font-size: 12px; margin-bottom: 2px;">Mana</div>
+            <div style="background: rgba(0,0,0,0.5); border: 1px solid #333; height: 16px;">
+                <div style="background: ${manaColor}; width: ${manaPercent}%; height: 100%; transition: width 0.3s;"></div>
+            </div>
+        </div>
+
+        <!-- Sprint Indicator -->
+        <div style="position: fixed; bottom: 30px; left: 30px; font-size: 32px;">
+            ${sprintIcon}
+        </div>
+
+        <!-- Interaction Prompts -->
+        <div style="position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; pointer-events: none;">
             ${chestPrompt}
             ${stairPrompt}
             ${portalPrompt}
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 10px;">
-                Enemies: ${game.enemies.filter(e => !e.isDead()).length}/${game.enemies.length}
-            </div>
-            ${statsInfo}
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                Mouse Look: ${mouseLockStatus}
-            </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                WASD: Move | SHIFT: Sprint | SHIFT x2: Dash | SPACE: Attack | E: Interact
-            </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                Dash: ${game.movement.dashCooldownTimer > 0 ?
-                    `<span style="color: #ff0">${game.movement.dashCooldownTimer.toFixed(1)}s</span>` :
-                    '<span style="color: #0f0">READY</span>'}
-            </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                1-4: Weapons | 5-9: Swords | F1-F4: Armor | F5-F8: Helmets | F9-F12: Shields
-            </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                T: Test Damage | H: Heal | R: Repair Armor
-            </div>
-            <div style="font-size: 12px; opacity: 0.7; margin-top: 5px;">
-                Audio: ${audioStatus}
-            </div>
-            ${game.audioInitialized ? `
-            <div style="font-size: 11px; opacity: 0.6; margin-top: 5px;">
-                <div style="margin-bottom: 3px;">
-                    Master Volume: ${masterVolume}%
-                    <button onclick="window.adjustMasterVolume(-0.1)" style="margin-left: 5px; padding: 2px 6px;">-</button>
-                    <button onclick="window.adjustMasterVolume(0.1)" style="padding: 2px 6px;">+</button>
-                </div>
-                <div style="margin-bottom: 3px;">
-                    <button onclick="window.toggleAudioCategory('ambience')" style="padding: 2px 6px; font-size: 10px;">Toggle Ambience</button>
-                    <button onclick="window.toggleAudioCategory('combat')" style="padding: 2px 6px; font-size: 10px;">Toggle Combat</button>
-                </div>
-            </div>
-            ` : ''}
-            </div>
+        </div>
+
+        <!-- Press ESC for Menu hint -->
+        <div style="position: fixed; top: 20px; right: 20px; color: rgba(255,255,255,0.3); font-size: 12px;">
+            ESC - Menu
         </div>
     `;
 

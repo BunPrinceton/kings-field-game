@@ -223,7 +223,7 @@ export class HomeDecorSystem {
     }
 
     /**
-     * Library - scholarly atmosphere
+     * Library - scholarly atmosphere with enhanced lighting
      */
     async createLibrary(room) {
         // Bookshelves along walls
@@ -233,9 +233,14 @@ export class HomeDecorSystem {
         const center = this.getRoomCenter(room);
         this.placeTable(center.x, center.z, 'large');
 
-        // Candles on table for reading
+        // Multiple candles on table for better reading light
         this.placeCandle(center.x - 0.5, center.z, 0.5);
         this.placeCandle(center.x + 0.5, center.z, 0.5);
+        this.placeCandle(center.x, center.z - 0.5, 0.5);
+        this.placeCandle(center.x, center.z + 0.5, 0.5);
+
+        // Add overhead chandelier for better illumination
+        this.placeChandelier(center.x, center.z);
 
         // Stacks of books
         for (let i = 0; i < 5; i++) {
@@ -244,11 +249,17 @@ export class HomeDecorSystem {
             this.placeBookStack(x, z);
         }
 
-        // Wall-mounted candelabras for lighting
-        const wallPoints = this.getWallMountPoints(room, 3);
+        // More wall-mounted torches for better visibility (increase from 3 to 6)
+        const wallPoints = this.getWallMountPoints(room, 6);
         wallPoints.forEach(point => {
             this.placeWallTorch(point.x, point.z);
         });
+
+        // Add corner torches for even more light
+        this.placeWallTorch((room.x + 0.5) * this.config.cellSize, (room.y + 0.5) * this.config.cellSize);
+        this.placeWallTorch((room.x + room.width - 0.5) * this.config.cellSize, (room.y + 0.5) * this.config.cellSize);
+        this.placeWallTorch((room.x + 0.5) * this.config.cellSize, (room.y + room.height - 0.5) * this.config.cellSize);
+        this.placeWallTorch((room.x + room.width - 0.5) * this.config.cellSize, (room.y + room.height - 0.5) * this.config.cellSize);
     }
 
     /**
@@ -750,6 +761,72 @@ export class HomeDecorSystem {
 
         this.scene.add(dish);
         this.decorations.push(dish);
+    }
+
+    /**
+     * Place chandelier for overhead lighting
+     */
+    placeChandelier(x, z) {
+        const chandelierGroup = new THREE.Group();
+
+        // Central chain
+        const chainGeom = new THREE.CylinderGeometry(0.02, 0.02, 1, 8);
+        const metalMat = this.getCachedMaterial(0x555555, { roughness: 0.3, metalness: 0.8 });
+        const chain = new THREE.Mesh(chainGeom, metalMat);
+        chain.position.y = this.config.wallHeight - 0.5;
+        chandelierGroup.add(chain);
+
+        // Chandelier frame (circular)
+        const frameRadius = 1;
+        const frameGeom = new THREE.TorusGeometry(frameRadius, 0.05, 8, 16);
+        const frame = new THREE.Mesh(frameGeom, metalMat);
+        frame.rotation.x = Math.PI / 2;
+        frame.position.y = this.config.wallHeight - 1;
+        chandelierGroup.add(frame);
+
+        // Candle holders around the frame
+        const candleCount = 8;
+        for (let i = 0; i < candleCount; i++) {
+            const angle = (i / candleCount) * Math.PI * 2;
+            const cx = Math.cos(angle) * frameRadius;
+            const cz = Math.sin(angle) * frameRadius;
+
+            // Candle holder
+            const holderGeom = new THREE.CylinderGeometry(0.08, 0.08, 0.15, 8);
+            const holder = new THREE.Mesh(holderGeom, metalMat);
+            holder.position.set(cx, this.config.wallHeight - 1, cz);
+            chandelierGroup.add(holder);
+
+            // Candle
+            const candleGeom = new THREE.CylinderGeometry(0.04, 0.04, 0.2, 8);
+            const candleMat = this.getCachedMaterial(0xFFF8DC, { emissive: 0xFFFF00, emissiveIntensity: 0.2 });
+            const candle = new THREE.Mesh(candleGeom, candleMat);
+            candle.position.set(cx, this.config.wallHeight - 0.9, cz);
+            chandelierGroup.add(candle);
+
+            // Flame effect
+            const flameGeom = new THREE.ConeGeometry(0.03, 0.08, 4);
+            const flameMat = this.getCachedMaterial(0xFFA500, { emissive: 0xFF6600, emissiveIntensity: 0.8 });
+            const flame = new THREE.Mesh(flameGeom, flameMat);
+            flame.position.set(cx, this.config.wallHeight - 0.75, cz);
+            chandelierGroup.add(flame);
+
+            // Add actual point light for each candle
+            const candleLight = new THREE.PointLight(0xFFFFAA, 0.5, 5);
+            candleLight.position.set(cx, this.config.wallHeight - 0.8, cz);
+            chandelierGroup.add(candleLight);
+            this.lights.push(candleLight);
+        }
+
+        // Central light for extra brightness
+        const centerLight = new THREE.PointLight(0xFFFFCC, 1.0, 10);
+        centerLight.position.y = this.config.wallHeight - 1;
+        chandelierGroup.add(centerLight);
+        this.lights.push(centerLight);
+
+        chandelierGroup.position.set(x, 0, z);
+        this.scene.add(chandelierGroup);
+        this.decorations.push(chandelierGroup);
     }
 
     /**

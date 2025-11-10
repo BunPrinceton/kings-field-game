@@ -7,7 +7,12 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "electron": "electron .",
+    "electron-build": "npm run build && electron-builder",
+    "dist-mac": "npm run build && electron-builder --mac",
+    "dist-win": "npm run build && electron-builder --win",
+    "dist-all": "npm run build && electron-builder --mac --win"
   },
   "keywords": ["game", "dungeon-crawler", "3d", "rpg"],
   "author": "",
@@ -17,5 +22,30 @@
   },
   "dependencies": {
     "three": "^0.160.0"
+  },
+  "build": {
+    "appId": "com.kingsfield.game",
+    "productName": "Kings Field",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "electron-main.js",
+      "index.html",
+      "public/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.games",
+      "icon": "public/icon.icns"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "public/icon.ico"
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "public/icon.png"
+    }
   }
 }

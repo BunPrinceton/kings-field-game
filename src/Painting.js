@@ -90,15 +90,30 @@ export class Painting {
         const height = this.data.height || 1.2;
 
         const geometry = new THREE.PlaneGeometry(width, height);
-        const material = new THREE.MeshStandardMaterial({
-            map: this.texture,
-            roughness: 0.8,
-            metalness: 0.1,
-            emissive: 0x000000,
-            emissiveIntensity: 0.0
-        });
 
-        this.canvasMesh = new THREE.Mesh(geometry, material);
+        // Check if texture exists, otherwise create a default color
+        if (this.texture) {
+            // Use the texture if available
+            const material = new THREE.MeshStandardMaterial({
+                map: this.texture,
+                roughness: 0.8,
+                metalness: 0.1,
+                emissive: 0x000000,
+                emissiveIntensity: 0.0
+            });
+            material.needsUpdate = true;
+            this.canvasMesh = new THREE.Mesh(geometry, material);
+        } else {
+            // Fallback to a solid color if no texture
+            console.warn(`No texture for painting ${this.data.id}, using fallback color`);
+            const material = new THREE.MeshStandardMaterial({
+                color: 0x6B4423,
+                roughness: 0.8,
+                metalness: 0.1
+            });
+            this.canvasMesh = new THREE.Mesh(geometry, material);
+        }
+
         this.canvasMesh.castShadow = false;
         this.canvasMesh.receiveShadow = true;
 

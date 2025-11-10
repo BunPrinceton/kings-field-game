@@ -13,6 +13,15 @@ export const TrapType = {
     BOULDER: 'boulder'
 };
 
+// Shared geometries to reduce memory usage
+const SHARED_TRAP_GEOMETRIES = {
+    plate: new THREE.BoxGeometry(1, 0.05, 1),
+    spikeCone: new THREE.ConeGeometry(0.04, 0.3, 4),
+    arrow: new THREE.ConeGeometry(0.02, 0.3, 4),
+    blade: new THREE.BoxGeometry(0.05, 0.8, 1.5),
+    pitCover: new THREE.BoxGeometry(1.8, 0.01, 1.8)
+};
+
 // Base trap class
 export class Trap {
     constructor(scene, position, damage = 15) {

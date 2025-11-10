@@ -9,12 +9,50 @@ import { Armor } from './Armor.js';
 import { SWORD_DEFINITIONS } from './SwordDefinitions.js';
 import { ARMOR_DEFINITIONS } from './ArmorDefinitions.js';
 
+// Basic consumable definitions
+const CONSUMABLE_DEFINITIONS = {
+  health_potion_small: {
+    id: 'health_potion_small',
+    name: 'Small Health Potion',
+    category: 'consumable',
+    type: 'potion',
+    description: 'Restores 25 health points',
+    value: 20,
+    weight: 0.5,
+    healAmount: 25,
+    rarity: 'common'
+  },
+  health_potion_medium: {
+    id: 'health_potion_medium',
+    name: 'Medium Health Potion',
+    category: 'consumable',
+    type: 'potion',
+    description: 'Restores 50 health points',
+    value: 50,
+    weight: 0.5,
+    healAmount: 50,
+    rarity: 'uncommon'
+  },
+  health_potion_large: {
+    id: 'health_potion_large',
+    name: 'Large Health Potion',
+    category: 'consumable',
+    type: 'potion',
+    description: 'Restores 100 health points',
+    value: 100,
+    weight: 0.5,
+    healAmount: 100,
+    rarity: 'rare'
+  }
+};
+
 export class ItemManager {
   constructor() {
     // Registry of all item definitions
     this.definitions = {
       ...SWORD_DEFINITIONS,
-      ...ARMOR_DEFINITIONS
+      ...ARMOR_DEFINITIONS,
+      ...CONSUMABLE_DEFINITIONS
       // Add other item types here
     };
 

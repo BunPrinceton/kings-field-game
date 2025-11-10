@@ -76,22 +76,41 @@ export class FurnitureDecorator {
     decorateEntranceRoom(room) {
         const center = this.getRoomCenter(room);
 
-        // Add benches for resting
-        this.placeFurniture(FurnitureType.BENCH, center.x - 2, center.z + 1.5, Math.PI / 2, {
-            condition: FurnitureCondition.GOOD
-        });
-        this.placeFurniture(FurnitureType.BENCH, center.x + 2, center.z + 1.5, Math.PI / 2, {
-            condition: FurnitureCondition.GOOD
-        });
+        // Only place furniture if room is large enough
+        if (room.width < 3 || room.height < 3) {
+            // Very small entrance - just one item
+            this.placeFurniture(FurnitureType.BARREL_SMALL, center.x + 2, center.z + 2, 0);
+            return;
+        }
 
-        // Weapon rack near entrance
-        this.placeFurniture(FurnitureType.WEAPON_RACK, center.x - 3, center.z - 2, 0, {
-            condition: FurnitureCondition.GOOD
-        });
+        // Spread items more widely based on room size
+        const spreadX = Math.max(3, room.width * 2);
+        const spreadZ = Math.max(3, room.height * 2);
 
-        // Some crates
-        this.placeFurniture(FurnitureType.CRATE_MEDIUM, center.x + 3, center.z - 1.5, Math.random() * Math.PI);
-        this.placeFurniture(FurnitureType.BARREL_SMALL, center.x + 3.5, center.z - 2.5, 0);
+        // Add benches for resting - farther apart
+        if (room.width >= 5) {
+            this.placeFurniture(FurnitureType.BENCH, center.x - spreadX, center.z + spreadZ * 0.7, Math.PI / 2, {
+                condition: FurnitureCondition.GOOD
+            });
+            this.placeFurniture(FurnitureType.BENCH, center.x + spreadX, center.z + spreadZ * 0.7, Math.PI / 2, {
+                condition: FurnitureCondition.GOOD
+            });
+        }
+
+        // Weapon rack near entrance - pushed to corner
+        if (room.height >= 4) {
+            this.placeFurniture(FurnitureType.WEAPON_RACK, center.x - spreadX * 0.8, center.z - spreadZ * 0.8, 0, {
+                condition: FurnitureCondition.GOOD
+            });
+        }
+
+        // Some crates - spread out more
+        if (Math.random() > 0.3) {
+            this.placeFurniture(FurnitureType.CRATE_MEDIUM, center.x + spreadX * 0.9, center.z - spreadZ * 0.5, Math.random() * Math.PI);
+        }
+        if (Math.random() > 0.3 && room.width >= 4) {
+            this.placeFurniture(FurnitureType.BARREL_SMALL, center.x + spreadX * 0.7, center.z - spreadZ * 0.9, 0);
+        }
     }
 
     /**
@@ -595,6 +614,19 @@ export class FurnitureDecorator {
      * Helper to place furniture and track it
      */
     placeFurniture(type, x, z, rotation = 0, options = {}) {
+        // Check if position is already occupied
+        if (this.isPositionOccupied(x, z, 1.0)) {
+            // Try to find a nearby free position
+            const freePos = this.findNearbyFreePosition(x, z, 2.0);
+            if (freePos) {
+                x = freePos.x;
+                z = freePos.z;
+            } else {
+                // Skip placing this furniture if no free space
+                return null;
+            }
+        }
+
         const furniture = this.furnitureManager.createFurniture(
             type,
             { x, y: 0, z },
@@ -609,6 +641,44 @@ export class FurnitureDecorator {
         }
 
         return furniture;
+    }
+
+    /**
+     * Check if a position is occupied by existing furniture
+     */
+    isPositionOccupied(x, z, radius = 1.0) {
+        for (const furniture of this.placedFurniture) {
+            if (!furniture || !furniture.position) continue;
+
+            const dx = furniture.position.x - x;
+            const dz = furniture.position.z - z;
+            const distance = Math.sqrt(dx * dx + dz * dz);
+
+            if (distance < radius * 2) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Find a nearby free position
+     */
+    findNearbyFreePosition(centerX, centerZ, searchRadius = 3.0) {
+        // Try positions in a spiral pattern
+        const steps = 8;
+        for (let r = 0.5; r <= searchRadius; r += 0.5) {
+            for (let i = 0; i < steps; i++) {
+                const angle = (i / steps) * Math.PI * 2;
+                const x = centerX + Math.cos(angle) * r;
+                const z = centerZ + Math.sin(angle) * r;
+
+                if (!this.isPositionOccupied(x, z, 0.8)) {
+                    return { x, z };
+                }
+            }
+        }
+        return null;
     }
 
     /**
